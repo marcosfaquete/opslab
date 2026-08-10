@@ -6,108 +6,110 @@ Date: 2026-08-09
 
 Provisionar a primeira VPS do projeto OpsLab na DigitalOcean, configurar o
 acesso remoto inicial por SSH com autenticação por chave pública, validar a
-identidade do servidor, inspecionar o estado inicial do sistema e aplicar as
-primeiras atualizações do Ubuntu.
+identidade do servidor, inspecionar o estado inicial do sistema, aplicar as
+primeiras atualizações do Ubuntu e estabelecer uma configuração inicial segura
+de acesso administrativo.
 
 Esta sessão representa o primeiro ambiente Cloud real do projeto.
 
 ---
 
-## Cloud Provider
+# Cloud Provider
 
 DigitalOcean.
 
 ---
 
-## Droplet
+# Droplet
 
-### Name
+## Name
 
 `opslab-01`
 
-### Region
+## Region
 
 NYC1 — New York.
 
-### Operating System
+## Operating System
 
 Ubuntu 24.04 LTS x64.
 
 Após o provisionamento, o sistema reportou:
 
-- Ubuntu 24.04.4 LTS
-- Architecture: x86-64
-- Virtualization: KVM
-- Hardware Vendor: DigitalOcean
-- Hardware Model: Droplet
+- Ubuntu 24.04.4 LTS;
+- Architecture: x86-64;
+- Virtualization: KVM;
+- Hardware Vendor: DigitalOcean;
+- Hardware Model: Droplet.
 
-### Compute
+## Compute
 
-- Basic Droplet
-- Shared CPU
-- Regular SSD
-- 1 vCPU
-- 1 GB RAM
-- 25 GB SSD
-- 1 TB Transfer
-- Estimated cost: US$ 6/month
+- Basic Droplet;
+- Shared CPU;
+- Regular SSD;
+- 1 vCPU;
+- 1 GB RAM;
+- 25 GB SSD;
+- 1 TB Transfer;
+- Estimated cost: US$ 6/month.
 
 O plano inicial foi escolhido propositalmente sem realizar vertical scaling
 antecipado.
 
 Caso recursos como memória ou CPU se tornem gargalos futuramente, a intenção
-é medir o problema antes de aumentar o tamanho da VPS.
+é medir e documentar o problema antes de aumentar o tamanho da VPS.
 
 ---
 
-## Storage Options
+# Storage Options
 
-### Additional Block Storage
+## Additional Block Storage
 
 Disabled.
 
 Nenhum volume adicional foi criado.
 
-### Automated Backups
+## Automated Backups
 
 Disabled.
 
-A intenção do laboratório é implementar e testar backup e restore
-manualmente antes de utilizar soluções automatizadas do provedor.
+A intenção do laboratório é implementar e testar backup e restore manualmente
+antes de utilizar soluções automatizadas do provedor.
 
 ---
 
-## Networking
+# Networking
 
-### Public IPv4
+## Public IPv4
 
 Enabled.
 
 O Droplet recebeu um endereço IPv4 público para permitir acesso pela internet.
 
-### Private IPv4
+## Private IPv4
 
-O servidor também recebeu um endereço privado pertencente à VPC da
+O servidor também recebeu um endereço IPv4 privado pertencente à VPC da
 DigitalOcean.
 
-Esse endereço é utilizado para comunicação privada dentro da infraestrutura
-Cloud e não foi utilizado para o acesso SSH a partir do computador local.
+Esse endereço pode ser utilizado para comunicação privada entre recursos
+dentro da infraestrutura Cloud.
 
-### Public IPv6
+O acesso SSH a partir do computador local utiliza o IPv4 público.
+
+## Public IPv6
 
 Disabled initially.
 
-IPv6 será estudado posteriormente como uma etapa separada para evitar
+IPv6 será estudado posteriormente como uma etapa separada, evitando
 complexidade desnecessária durante os primeiros exercícios de networking.
 
 ---
 
-## Monitoring
+# Monitoring
 
 DigitalOcean Improved Metrics and Monitoring enabled.
 
-O agente de métricas da DigitalOcean foi instalado automaticamente durante
-o provisionamento.
+O agente de métricas da DigitalOcean foi habilitado durante o provisionamento.
 
 Nenhuma solução própria de observabilidade foi instalada nesta etapa.
 
@@ -115,11 +117,11 @@ Prometheus, Grafana e outras ferramentas serão estudados posteriormente.
 
 ---
 
-## Startup Automation
+# Startup Automation
 
 Startup Scripts disabled.
 
-O provisionamento inicial será realizado manualmente para permitir o
+O provisionamento inicial está sendo realizado manualmente para permitir o
 entendimento das configurações antes da introdução de automação.
 
 Futuramente poderão ser estudados:
@@ -146,3 +148,917 @@ Command used:
 
 ```powershell
 ssh-keygen -t ed25519 -C "opslab-digitalocean" -f "$env:USERPROFILE\.ssh\id_ed25519_opslab"
+```
+
+---
+
+## SSH Key Files
+
+The command generated two files.
+
+Private key:
+
+```text
+C:\Users\Marcos\.ssh\id_ed25519_opslab
+```
+
+Public key:
+
+```text
+C:\Users\Marcos\.ssh\id_ed25519_opslab.pub
+```
+
+The private key was protected with a passphrase.
+
+A private key permanece exclusivamente no computador Windows local.
+
+Ela não deve:
+
+- ser enviada ao servidor;
+- ser compartilhada;
+- aparecer em screenshots;
+- ser adicionada ao GitHub;
+- ser armazenada dentro do repositório.
+
+Somente a chave pública foi cadastrada na DigitalOcean.
+
+DigitalOcean SSH Key name:
+
+```text
+Marcos-Windows-OpsLab
+```
+
+---
+
+# SSH Host Verification
+
+Durante a primeira conexão SSH, o servidor apresentou sua ED25519 Host Key.
+
+Como o computador local ainda não conhecia aquele servidor, o OpenSSH exibiu
+um fingerprint e solicitou confirmação antes de adicionar a identidade do
+servidor ao arquivo `known_hosts`.
+
+Em vez de aceitar o fingerprint imediatamente, ele foi verificado através de
+um segundo canal utilizando o DigitalOcean Web Console.
+
+Inside the server, the following command was executed:
+
+```bash
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub -E sha256
+```
+
+Fingerprint validated:
+
+```text
+SHA256:QGCVz+YGNl+7pxmPze16H/YKZfaBtsUmXgJXCis/SwA
+```
+
+O fingerprint retornado diretamente pelo servidor era idêntico ao fingerprint
+apresentado pelo cliente OpenSSH no Windows.
+
+Somente após essa validação a Host Key foi aceita.
+
+O OpenSSH então registrou a identidade conhecida do servidor no arquivo local:
+
+```text
+C:\Users\Marcos\.ssh\known_hosts
+```
+
+Este procedimento demonstrou a diferença entre:
+
+- User SSH Key: permite ao servidor verificar a identidade do cliente;
+- SSH Host Key: permite ao cliente verificar a identidade do servidor.
+
+---
+
+# First SSH Connection
+
+A primeira conexão foi testada inicialmente utilizando o modo verbose:
+
+```powershell
+ssh -vvv -i "$env:USERPROFILE\.ssh\id_ed25519_opslab" root@<PUBLIC_IP>
+```
+
+O parâmetro `-vvv` permitiu observar detalhadamente o processo de conexão e
+autenticação.
+
+Durante o diagnóstico foi possível observar que o cliente SSH:
+
+1. estabeleceu conexão com a porta 22;
+2. validou a Host Key conhecida;
+3. localizou a private key especificada;
+4. ofereceu a public key correspondente;
+5. recebeu confirmação de que o servidor aceitava aquela chave;
+6. solicitou a passphrase local;
+7. utilizou a private key para realizar a autenticação criptográfica;
+8. abriu a sessão remota com sucesso.
+
+A private key não foi transmitida para o servidor.
+
+Após a validação inicial, o acesso normal foi testado sem modo verbose:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519_opslab" root@<PUBLIC_IP>
+```
+
+The connection succeeded.
+
+---
+
+# DigitalOcean Web Console
+
+Durante o troubleshooting inicial também foi utilizado o DigitalOcean Web
+Console.
+
+Ele foi útil como canal alternativo para:
+
+- acessar o servidor;
+- verificar a SSH Host Key;
+- consultar logs;
+- validar o estado do serviço SSH.
+
+O Web Console é útil como ferramenta do provedor, mas não substitui o uso e o
+aprendizado de SSH como método padrão de administração remota.
+
+---
+
+# Initial System Inspection
+
+Antes de instalar aplicações ou alterar a arquitetura do servidor, foi
+realizada uma inspeção inicial para registrar o estado do ambiente.
+
+---
+
+## Host Information
+
+Command:
+
+```bash
+hostnamectl
+```
+
+Main results:
+
+```text
+Static hostname: opslab-01
+Operating System: Ubuntu 24.04.4 LTS
+Architecture: x86-64
+Virtualization: kvm
+Hardware Vendor: DigitalOcean
+Hardware Model: Droplet
+```
+
+A inspeção confirmou que o Droplet é uma máquina virtual executada sobre
+virtualização KVM.
+
+---
+
+## Memory
+
+Command:
+
+```bash
+free -h
+```
+
+Observed during the initial inspection:
+
+- approximately 961 MiB total RAM;
+- approximately 315 MiB used;
+- approximately 646 MiB available;
+- no swap configured.
+
+Foi observado que a coluna `free` isoladamente não representa toda a memória
+que pode ser utilizada por novas aplicações.
+
+O Linux utiliza memória disponível como cache e pode liberar parte desse
+espaço quando necessário.
+
+A coluna `available` fornece uma estimativa mais útil da quantidade de memória
+que pode ser utilizada sem necessidade de swap.
+
+Nenhuma swap foi criada durante esta etapa.
+
+---
+
+## Filesystem Usage
+
+Command:
+
+```bash
+df -h
+```
+
+Main filesystem:
+
+```text
+/dev/vda1
+```
+
+Mounted at:
+
+```text
+/
+```
+
+Observed values:
+
+- approximately 24 GB filesystem size;
+- approximately 1.9 GB initially used;
+- approximately 22 GB available;
+- approximately 9% usage.
+
+---
+
+## Block Devices
+
+Command:
+
+```bash
+lsblk
+```
+
+Observed structure:
+
+```text
+vda      25G   disk
+├─vda1   24G   part   /
+├─vda14   4M   part
+├─vda15 106M   part   /boot/efi
+└─vda16 913M   part   /boot
+```
+
+The main virtual disk is:
+
+```text
+vda
+```
+
+The main partition is:
+
+```text
+vda1
+```
+
+Mounted as:
+
+```text
+/
+```
+
+---
+
+## Filesystem Information
+
+Command:
+
+```bash
+lsblk -f
+```
+
+Observed filesystems included:
+
+```text
+vda1   ext4      cloudimg-rootfs
+vda15  vfat      UEFI
+vda16  ext4      BOOT
+```
+
+A small additional read-only device was also present:
+
+```text
+vdb
+```
+
+Filesystem:
+
+```text
+iso9660
+```
+
+Label:
+
+```text
+config-2
+```
+
+Esse dispositivo foi identificado como um Config Drive utilizado pelo
+ambiente Cloud para disponibilizar metadados e informações de configuração
+para a máquina virtual.
+
+Essa inspeção também demonstrou características de uma Ubuntu Cloud Image.
+
+---
+
+## CPU
+
+Command:
+
+```bash
+lscpu
+```
+
+Main observations:
+
+- architecture: x86_64;
+- 1 vCPU;
+- Intel-compatible virtual CPU;
+- QEMU virtual hardware;
+- KVM hypervisor;
+- full virtualization.
+
+O sistema operacional enxerga uma CPU lógica disponível.
+
+Como o plano utilizado é Basic / Shared CPU, a capacidade de processamento
+virtual é compartilhada sobre a infraestrutura física do provedor.
+
+---
+
+# Initial Ubuntu Update
+
+Ao acessar o servidor inicialmente, o Ubuntu informou que dezenas de
+atualizações estavam disponíveis, incluindo várias atualizações de segurança.
+
+Foi decidido atualizar o sistema antes de instalar novos serviços.
+
+---
+
+## Package Index Update
+
+Command:
+
+```bash
+apt update
+```
+
+Esse comando atualizou o índice local de pacotes disponíveis nos repositórios.
+
+---
+
+## Package Upgrade
+
+Command:
+
+```bash
+apt upgrade
+```
+
+Before confirmation, the upgrade reported:
+
+```text
+81 upgraded
+6 newly installed
+0 to remove
+0 not upgraded
+```
+
+Também foram reportadas dezenas de atualizações de segurança.
+
+Approximately:
+
+```text
+175 MB downloaded
+194 MB additional disk usage
+```
+
+O upgrade foi confirmado manualmente.
+
+---
+
+# OpenSSH Package Update
+
+Durante o upgrade, componentes do OpenSSH também foram atualizados.
+
+Entre eles:
+
+- openssh-client;
+- openssh-server;
+- openssh-sftp-server.
+
+O package manager detectou que:
+
+```text
+/etc/ssh/sshd_config
+```
+
+possuía diferenças em relação à configuração fornecida pela nova versão do
+pacote.
+
+Foi escolhida a opção:
+
+```text
+keep the local version currently installed
+```
+
+Essa decisão preservou a configuração SSH que já estava funcionando no
+servidor em vez de substituí-la automaticamente.
+
+---
+
+# Kernel Update
+
+Before the upgrade, the running kernel was:
+
+```text
+6.8.0-124-generic
+```
+
+The upgrade installed:
+
+```text
+6.8.0-137-generic
+```
+
+Como o novo kernel só se torna ativo após uma nova inicialização, o Droplet
+foi reiniciado conscientemente.
+
+Após o reboot e uma nova conexão SSH, o kernel ativo foi validado com:
+
+```bash
+uname -r
+```
+
+Result:
+
+```text
+6.8.0-137-generic
+```
+
+Também foram verificadas atualizações restantes e serviços systemd com falha.
+
+Nenhuma atualização pendente ou serviço relevante em estado failed foi
+encontrado.
+
+The initial Ubuntu update cycle was therefore considered successfully
+completed.
+
+---
+
+# Administrative User
+
+Após a atualização inicial, foi criado um usuário administrativo dedicado:
+
+```text
+marcos
+```
+
+Command:
+
+```bash
+adduser marcos
+```
+
+The account received its own home directory:
+
+```text
+/home/marcos
+```
+
+Uma senha local foi configurada para a conta.
+
+Essa senha é diferente da passphrase utilizada para proteger a private key SSH.
+
+---
+
+## Sudo Configuration
+
+The user was added to the `sudo` group:
+
+```bash
+usermod -aG sudo marcos
+```
+
+Membership was validated using:
+
+```bash
+id marcos
+```
+
+Observed result included:
+
+```text
+groups=1000(marcos),27(sudo),100(users)
+```
+
+Isso confirmou que o usuário pertence aos grupos:
+
+- `marcos`;
+- `sudo`;
+- `users`.
+
+Essa configuração permite realizar a administração normal utilizando uma conta
+sem privilégio root permanente e elevar privilégios somente quando necessário.
+
+---
+
+# SSH Access for the Administrative User
+
+An SSH directory was created for the new account:
+
+```bash
+mkdir -p /home/marcos/.ssh
+```
+
+The existing authorized public key was copied from the initial root account:
+
+```bash
+cp /root/.ssh/authorized_keys /home/marcos/.ssh/authorized_keys
+```
+
+Ownership was corrected:
+
+```bash
+chown -R marcos:marcos /home/marcos/.ssh
+```
+
+Permissions were configured:
+
+```bash
+chmod 700 /home/marcos/.ssh
+chmod 600 /home/marcos/.ssh/authorized_keys
+```
+
+Validation confirmed:
+
+```text
+drwx------ marcos marcos /home/marcos/.ssh
+-rw------- marcos marcos /home/marcos/.ssh/authorized_keys
+```
+
+A new SSH connection was then tested from Windows:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519_opslab" marcos@<PUBLIC_IP>
+```
+
+The login succeeded.
+
+---
+
+## Sudo Validation
+
+Administrative privilege elevation was tested with:
+
+```bash
+sudo whoami
+```
+
+Result:
+
+```text
+root
+```
+
+Isso comprovou que o usuário `marcos` consegue:
+
+- autenticar remotamente utilizando a chave SSH;
+- trabalhar como usuário normal;
+- elevar privilégios administrativos quando necessário através do `sudo`.
+
+Esse acesso alternativo foi validado antes de qualquer restrição ao login
+remoto do root.
+
+---
+
+# SSH Hardening
+
+Antes de alterar a configuração do OpenSSH, o estado efetivo do serviço foi
+inspecionado.
+
+Command:
+
+```bash
+sudo sshd -T | grep -E 'permitrootlogin|passwordauthentication|pubkeyauthentication'
+```
+
+Initial effective configuration:
+
+```text
+permitrootlogin yes
+pubkeyauthentication yes
+passwordauthentication no
+```
+
+Isso demonstrou que:
+
+- public-key authentication estava habilitado;
+- password authentication já estava desabilitado;
+- login SSH direto como root ainda estava permitido.
+
+---
+
+## Configuration Source Inspection
+
+Os arquivos responsáveis pelas configurações foram identificados antes de
+realizar mudanças.
+
+Relevant files included:
+
+```text
+/etc/ssh/sshd_config
+/etc/ssh/sshd_config.d/50-cloud-init.conf
+/etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+```
+
+A configuração principal permitia login remoto como root.
+
+As configurações da imagem Cloud já desabilitavam autenticação SSH por senha.
+
+---
+
+# OpsLab SSH Policy
+
+Foi criado um arquivo próprio para registrar as decisões de hardening do
+OpsLab:
+
+```text
+/etc/ssh/sshd_config.d/00-opslab-hardening.conf
+```
+
+Contents:
+
+```text
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+```
+
+The intended SSH policy became:
+
+- direct SSH login as root: disabled;
+- SSH password authentication: disabled;
+- SSH public-key authentication: enabled.
+
+---
+
+## SSH Configuration Validation
+
+Antes de aplicar a nova configuração, sua sintaxe foi validada com:
+
+```bash
+sudo sshd -t
+```
+
+No errors were returned.
+
+A configuração efetiva foi então consultada novamente:
+
+```bash
+sudo sshd -T | grep -E 'permitrootlogin|passwordauthentication|pubkeyauthentication'
+```
+
+Validated result:
+
+```text
+permitrootlogin no
+pubkeyauthentication yes
+passwordauthentication no
+```
+
+Isso confirmou que a política desejada estava sendo aplicada pelo OpenSSH.
+
+---
+
+## Reload SSH Configuration
+
+The SSH service configuration was reloaded with:
+
+```bash
+sudo systemctl reload ssh
+```
+
+Foi utilizado `reload` em vez de reiniciar completamente o servidor.
+
+As sessões SSH existentes permaneceram abertas durante o processo.
+
+---
+
+# SSH Hardening Validation
+
+A sessão SSH original como root foi mantida aberta temporariamente como
+caminho de recuperação durante a alteração.
+
+Após recarregar a configuração, uma nova conexão SSH foi aberta utilizando o
+usuário:
+
+```text
+marcos
+```
+
+The connection succeeded.
+
+Sudo was tested again:
+
+```bash
+sudo whoami
+```
+
+Result:
+
+```text
+root
+```
+
+Em seguida, foi realizada uma nova tentativa de conexão SSH utilizando
+diretamente a conta root.
+
+Command:
+
+```powershell
+ssh -i "$env:USERPROFILE\.ssh\id_ed25519_opslab" root@<PUBLIC_IP>
+```
+
+Result:
+
+```text
+Permission denied (publickey).
+```
+
+Isso confirmou que:
+
+- o novo acesso administrativo continuava funcional;
+- sudo continuava funcional;
+- login SSH direto como root estava efetivamente bloqueado.
+
+---
+
+# Final SSH State
+
+Completed:
+
+- [x] SSH Ed25519 key pair created;
+- [x] private key protected with passphrase;
+- [x] only public key registered in DigitalOcean;
+- [x] SSH Host Key verified through a second channel;
+- [x] server identity stored in `known_hosts`;
+- [x] SSH public-key authentication tested;
+- [x] dedicated administrative user created;
+- [x] administrative user added to sudo;
+- [x] SSH key configured for administrative user;
+- [x] permissions on `.ssh` and `authorized_keys` validated;
+- [x] SSH login as `marcos` tested;
+- [x] sudo privileges tested;
+- [x] SSH password authentication disabled;
+- [x] SSH public-key authentication enabled;
+- [x] direct SSH login as root disabled;
+- [x] OpenSSH syntax validated with `sshd -t`;
+- [x] effective OpenSSH configuration validated with `sshd -T`;
+- [x] post-hardening SSH login tested;
+- [x] root SSH login rejection validated.
+
+Normal administrative access is now:
+
+```text
+Windows
+   ↓
+SSH public-key authentication
+   ↓
+marcos
+   ↓
+sudo when required
+   ↓
+root privileges
+```
+
+---
+
+# Security Procedure Learned
+
+Mudanças de autenticação remota nunca devem ser aplicadas fechando
+imediatamente a sessão administrativa existente.
+
+O procedimento utilizado foi:
+
+1. manter a sessão administrativa existente aberta;
+2. configurar um novo caminho de acesso;
+3. testar a nova conta em uma segunda sessão;
+4. validar SSH;
+5. validar sudo;
+6. alterar a configuração;
+7. validar sintaxe;
+8. recarregar o serviço;
+9. abrir uma nova sessão;
+10. confirmar que o novo acesso funciona;
+11. testar que o acesso antigo foi bloqueado;
+12. somente então considerar a mudança concluída.
+
+Esse procedimento reduz o risco de perder acesso administrativo à VPS.
+
+---
+
+# What I Learned
+
+During this session I practiced and understood:
+
+- Cloud VPS provisioning;
+- DigitalOcean Droplets;
+- basic Cloud compute concepts;
+- public and private IPv4 addresses;
+- SSH public/private key authentication;
+- Ed25519 SSH keys;
+- private-key passphrases;
+- SSH Host Keys;
+- SSH fingerprints;
+- `known_hosts`;
+- SSH verbose troubleshooting with `-vvv`;
+- DigitalOcean Web Console as an alternative administrative channel;
+- KVM virtualization;
+- QEMU virtual hardware;
+- Linux CPU inspection with `lscpu`;
+- Linux memory inspection with `free`;
+- filesystem inspection with `df`;
+- disk and partition inspection with `lsblk`;
+- filesystem inspection with `lsblk -f`;
+- Cloud Config Drives;
+- Ubuntu package management;
+- difference between `apt update` and `apt upgrade`;
+- kernel updates;
+- reboot requirements after kernel updates;
+- Linux users and groups;
+- user home directories;
+- file ownership;
+- Linux file permissions;
+- the `sudo` administrative model;
+- principle of least privilege;
+- OpenSSH configuration;
+- SSH configuration directories;
+- effective OpenSSH configuration with `sshd -T`;
+- SSH syntax validation with `sshd -t`;
+- SSH service reload;
+- disabling remote root login;
+- disabling SSH password authentication;
+- importance of validating a second administrative path before restricting the
+  original one.
+
+---
+
+# Current State
+
+Completed:
+
+- [x] DigitalOcean Droplet provisioned;
+- [x] Ubuntu 24.04 LTS running;
+- [x] initial system inspection completed;
+- [x] Ubuntu package index updated;
+- [x] installed packages upgraded;
+- [x] security updates applied;
+- [x] updated kernel installed;
+- [x] Droplet rebooted;
+- [x] updated kernel validated;
+- [x] no pending package updates detected;
+- [x] no relevant failed systemd services detected;
+- [x] SSH key authentication operational;
+- [x] SSH Host Key verified;
+- [x] dedicated administrative user created;
+- [x] sudo configured;
+- [x] SSH access migrated to the administrative user;
+- [x] direct root SSH login disabled;
+- [x] SSH password authentication disabled;
+- [x] SSH hardening validated.
+
+Pending:
+
+- [ ] configure UFW;
+- [ ] define firewall rules;
+- [ ] validate SSH access through the firewall;
+- [ ] install Nginx;
+- [ ] expose the first HTTP service;
+- [ ] create initial OpsLab web content;
+- [ ] implement application/API;
+- [ ] install PostgreSQL;
+- [ ] configure HTTPS;
+- [ ] configure backup procedures;
+- [ ] test restore procedures;
+- [ ] implement monitoring and observability;
+- [ ] implement deployment workflow;
+- [ ] implement CI/CD;
+- [ ] practice rollback;
+- [ ] practice disaster recovery.
+
+---
+
+# Next Step
+
+Configure the UFW firewall.
+
+The SSH rule must be explicitly allowed and validated before enabling the
+firewall to avoid losing remote administrative access.
+
+Initial intended flow:
+
+```text
+Internet
+   ↓
+UFW
+   ↓
+SSH / HTTP / HTTPS
+   ↓
+Services
+```
+
+After the firewall baseline is configured and validated, the next major
+service will be Nginx.
+
+The project continues following the principle:
+
+**UNDERSTAND → EXECUTE → TEST → DOCUMENT → COMMIT**
