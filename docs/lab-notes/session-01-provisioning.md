@@ -1,16 +1,16 @@
 # Session 01 — Provisioning
 
-Date: 2026-08-09
+Date: 2026-08-09 — continued on 2026-08-10
 
 ## Objective
 
-Provisionar a primeira VPS do projeto OpsLab na DigitalOcean, configurar o
-acesso remoto inicial por SSH com autenticação por chave pública, validar a
-identidade do servidor, inspecionar o estado inicial do sistema, aplicar as
-primeiras atualizações do Ubuntu e estabelecer uma configuração inicial segura
-de acesso administrativo.
+Provisionar a primeira VPS do projeto OpsLab na DigitalOcean, configurar e
+validar o acesso administrativo seguro por SSH, inspecionar e atualizar o
+sistema operacional, estabelecer uma baseline de firewall com UFW, instalar e
+validar o Nginx e publicar o primeiro conteúdo HTTP próprio do OpsLab.
 
-Esta sessão representa o primeiro ambiente Cloud real do projeto.
+Esta sessão representa o primeiro ambiente Cloud real do projeto e estabelece
+a baseline inicial de sistema, acesso remoto, firewall e servidor web.
 
 ---
 
@@ -381,11 +381,11 @@ lsblk
 Observed structure:
 
 ```text
-vda      25G   disk
-├─vda1   24G   part   /
-├─vda14   4M   part
-├─vda15 106M   part   /boot/efi
-└─vda16 913M   part   /boot
+vda      25G   disk
+├─vda1   24G   part   /
+├─vda14   4M   part
+├─vda15 106M   part   /boot/efi
+└─vda16 913M   part   /boot
 ```
 
 The main virtual disk is:
@@ -419,9 +419,9 @@ lsblk -f
 Observed filesystems included:
 
 ```text
-vda1   ext4      cloudimg-rootfs
-vda15  vfat      UEFI
-vda16  ext4      BOOT
+vda1   ext4      cloudimg-rootfs
+vda15  vfat      UEFI
+vda16  ext4      BOOT
 ```
 
 A small additional read-only device was also present:
@@ -910,13 +910,13 @@ Normal administrative access is now:
 
 ```text
 Windows
-   ↓
+   ↓
 SSH public-key authentication
-   ↓
+   ↓
 marcos
-   ↓
+   ↓
 sudo when required
-   ↓
+   ↓
 root privileges
 ```
 
@@ -943,6 +943,455 @@ O procedimento utilizado foi:
 12. somente então considerar a mudança concluída.
 
 Esse procedimento reduz o risco de perder acesso administrativo à VPS.
+
+---
+
+# UFW Firewall Baseline
+
+Após concluir o hardening de SSH, foi configurado o firewall local da VPS com
+UFW.
+
+Antes de qualquer mudança, o estado foi verificado:
+
+```bash
+sudo ufw status verbose
+```
+
+Initial result:
+
+```text
+Status: inactive
+```
+
+Como a administração da VPS depende de SSH, a regra correspondente foi
+adicionada antes da ativação do firewall.
+
+Application profile used:
+
+```text
+OpenSSH
+```
+
+A regra cadastrada foi conferida com:
+
+```bash
+sudo ufw show added
+```
+
+Result:
+
+```text
+ufw allow OpenSSH
+```
+
+Somente após confirmar a existência da regra SSH o firewall foi habilitado:
+
+```bash
+sudo ufw enable
+```
+
+The firewall became active and enabled on system startup.
+
+Effective baseline:
+
+```text
+Default incoming: deny
+Default outgoing: allow
+Logging: low
+```
+
+Initial allowed service:
+
+```text
+22/tcp (OpenSSH)  ALLOW IN
+```
+
+Uma nova conexão SSH foi aberta a partir do Windows depois da ativação do UFW.
+O login como `marcos` continuou funcionando normalmente.
+
+Isso validou que o acesso administrativo atravessava corretamente o firewall e
+que a VPS não havia sido bloqueada por uma regra incorreta.
+
+---
+
+# Nginx Installation
+
+Com a baseline de firewall ativa, o Nginx foi instalado:
+
+```bash
+sudo apt install nginx
+```
+
+The installation added:
+
+```text
+nginx
+nginx-common
+```
+
+No packages were removed and no pending package upgrades remained.
+
+O serviço foi inspecionado com:
+
+```bash
+systemctl status nginx
+```
+
+Observed state:
+
+```text
+Loaded: enabled
+Active: active (running)
+```
+
+The service was therefore running and configured to start automatically with
+the system.
+
+Antes de liberar HTTP no firewall, o Nginx foi testado internamente na própria
+VPS:
+
+```bash
+curl -I http://127.0.0.1
+```
+
+Observed response:
+
+```text
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+```
+
+Esse teste comprovou que o serviço HTTP funcionava localmente antes de sua
+exposição à internet.
+
+---
+
+# UFW HTTP Rule
+
+Após a instalação do Nginx, os application profiles disponíveis no UFW foram
+consultados:
+
+```bash
+sudo ufw app list
+```
+
+Observed profiles:
+
+```text
+Nginx Full
+Nginx HTTP
+Nginx HTTPS
+OpenSSH
+```
+
+Como HTTPS ainda não havia sido configurado, foi aplicado o princípio de menor
+privilégio e somente o profile HTTP foi liberado:
+
+```bash
+sudo ufw allow 'Nginx HTTP'
+```
+
+The resulting firewall rules included:
+
+```text
+22/tcp (OpenSSH)     ALLOW IN    Anywhere
+80/tcp (Nginx HTTP)  ALLOW IN    Anywhere
+```
+
+Equivalent IPv6 rules were also created by UFW, although public IPv6 remained
+disabled at the DigitalOcean networking layer.
+
+O acesso externo foi então validado em um navegador utilizando o IPv4 público
+do Droplet.
+
+The default Nginx page was successfully displayed.
+
+This demonstrated the difference between:
+
+- a service running locally;
+- a process listening for HTTP;
+- a firewall allowing external traffic to reach that service.
+
+---
+
+# Nginx Default Site Inspection
+
+Antes de substituir a página padrão, a configuração ativa foi inspecionada:
+
+```bash
+sudo grep -nE '^\s*(listen|root|index|server_name)' /etc/nginx/sites-enabled/default
+```
+
+Relevant result:
+
+```text
+listen 80 default_server;
+listen [::]:80 default_server;
+root /var/www/html;
+index index.html index.htm index.nginx-debian.html;
+server_name _;
+```
+
+Foi identificado que o site padrão utilizava:
+
+```text
+/var/www/html
+```
+
+O conteúdo da pasta foi inspecionado:
+
+```bash
+ls -lah /var/www/html
+```
+
+The default page was identified as:
+
+```text
+/var/www/html/index.nginx-debian.html
+```
+
+Its contents were inspected with:
+
+```bash
+cat /var/www/html/index.nginx-debian.html
+```
+
+Isso confirmou que a página `Welcome to nginx!` exibida no navegador era um
+arquivo HTML estático servido a partir do web root padrão.
+
+---
+
+# OpsLab Web Root
+
+Em vez de apagar ou modificar diretamente os arquivos instalados pelo pacote
+do Nginx, foi criado um web root próprio para o projeto:
+
+```bash
+sudo mkdir -p /var/www/opslab/html
+```
+
+Initial ownership:
+
+```text
+root:root
+```
+
+Para permitir que o usuário administrativo gerencie o conteúdo do projeto sem
+utilizar `sudo` para cada edição, a propriedade foi alterada:
+
+```bash
+sudo chown -R marcos:marcos /var/www/opslab
+```
+
+Validated ownership:
+
+```text
+/var/www/opslab       marcos:marcos
+/var/www/opslab/html  marcos:marcos
+```
+
+O Nginx não precisa ser proprietário desses arquivos; permissões de leitura
+são suficientes para servir conteúdo estático.
+
+---
+
+# Initial OpsLab Web Content
+
+O primeiro arquivo próprio do projeto foi criado como usuário `marcos`:
+
+```bash
+nano /var/www/opslab/html/index.html
+```
+
+Initial content:
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>OpsLab</title>
+</head>
+<body>
+    <h1>OpsLab</h1>
+    <p>Servidor web funcionando em uma VPS Linux.</p>
+</body>
+</html>
+```
+
+The file was validated with:
+
+```bash
+ls -lah /var/www/opslab/html
+cat /var/www/opslab/html/index.html
+```
+
+At this point the file existed, but the Nginx default site still pointed to
+`/var/www/html`.
+
+---
+
+# Nginx Sites Structure
+
+The Ubuntu Nginx site layout was inspected with:
+
+```bash
+ls -l /etc/nginx/sites-available /etc/nginx/sites-enabled
+```
+
+Observed structure:
+
+```text
+/etc/nginx/sites-available/default
+/etc/nginx/sites-enabled/default -> /etc/nginx/sites-available/default
+```
+
+This demonstrated the separation between:
+
+- `sites-available`: site configurations that exist;
+- `sites-enabled`: symbolic links for configurations that are active.
+
+---
+
+# OpsLab Nginx Server Block
+
+A dedicated Nginx configuration was created:
+
+```text
+/etc/nginx/sites-available/opslab
+```
+
+Configuration used:
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name <PUBLIC_IP>;
+
+    root /var/www/opslab/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+```
+
+The file was inspected before activation, including a numbered-line validation
+with:
+
+```bash
+sudo nl -ba /etc/nginx/sites-available/opslab
+```
+
+A symbolic link was then created to enable the site:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/opslab /etc/nginx/sites-enabled/opslab
+```
+
+The enabled sites directory then contained both:
+
+```text
+default -> /etc/nginx/sites-available/default
+opslab  -> /etc/nginx/sites-available/opslab
+```
+
+The default configuration was intentionally left in place rather than deleted,
+keeping the original package configuration available as a reference and simple
+rollback path.
+
+---
+
+# Nginx Configuration Validation and Reload
+
+Before applying the new server block, the full Nginx configuration was tested:
+
+```bash
+sudo nginx -t
+```
+
+Result:
+
+```text
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
+Only after this validation was the service configuration reloaded:
+
+```bash
+sudo systemctl reload nginx
+```
+
+`reload` was preferred over a full restart because the goal was to apply a
+validated configuration change while keeping the web service running.
+
+---
+
+# Initial OpsLab HTTP Publication
+
+After the Nginx reload, the Droplet public IPv4 was accessed again through a
+browser.
+
+The previous `Welcome to nginx!` page was replaced by the custom OpsLab
+content:
+
+```text
+OpsLab
+Servidor web funcionando em uma VPS Linux.
+```
+
+The effective request path became:
+
+```text
+Internet
+   ↓
+DigitalOcean public IPv4
+   ↓
+UFW — TCP/80 allowed
+   ↓
+Nginx
+   ↓
+OpsLab server block
+   ↓
+/var/www/opslab/html/index.html
+```
+
+This completed the first custom HTTP publication of the OpsLab environment.
+
+---
+
+# Final Firewall and Web Server State
+
+Firewall baseline:
+
+```text
+UFW: active
+Default incoming: deny
+Default outgoing: allow
+22/tcp: OpenSSH allowed
+80/tcp: Nginx HTTP allowed
+```
+
+Web server baseline:
+
+```text
+Nginx installed
+Nginx active (running)
+Nginx enabled at boot
+Local HTTP validated
+External HTTP validated
+Custom OpsLab web root configured
+Custom OpsLab server block enabled
+Nginx configuration validated before reload
+```
+
+The current public web path is intentionally HTTP-only.
+
+HTTPS on TCP/443 remains a later phase and has not yet been configured.
 
 ---
 
@@ -987,14 +1436,34 @@ During this session I practiced and understood:
 - SSH service reload;
 - disabling remote root login;
 - disabling SSH password authentication;
-- importance of validating a second administrative path before restricting the
-  original one.
+- importance of validating a second administrative path before restricting the original one;
+- host firewall concepts with UFW;
+- default-deny inbound firewall policy;
+- UFW application profiles;
+- relationship between services and TCP ports;
+- SSH on TCP/22;
+- HTTP on TCP/80;
+- difference between a local service and external network exposure;
+- Nginx installation and service management with systemd;
+- local HTTP validation using `curl`;
+- Nginx web roots;
+- static HTML publication;
+- ownership and permissions for web content;
+- Ubuntu Nginx `sites-available` and `sites-enabled` structure;
+- symbolic links for enabling Nginx sites;
+- Nginx server blocks;
+- `server_name`, `root`, `index`, `location` and `try_files`;
+- Nginx configuration validation with `nginx -t`;
+- applying Nginx configuration changes with `systemctl reload nginx`;
+- exposing custom HTTP content through a public Cloud VPS.
 
 ---
 
 # Current State
 
-Completed:
+## Completed
+
+### Provisioning, System Baseline & SSH Hardening
 
 - [x] DigitalOcean Droplet provisioned;
 - [x] Ubuntu 24.04 LTS running;
@@ -1016,15 +1485,43 @@ Completed:
 - [x] SSH password authentication disabled;
 - [x] SSH hardening validated.
 
-Pending:
+### Firewall Baseline & Initial Nginx HTTP Exposure
 
-- [ ] configure UFW;
-- [ ] define firewall rules;
-- [ ] validate SSH access through the firewall;
-- [ ] install Nginx;
-- [ ] expose the first HTTP service;
-- [ ] create initial OpsLab web content;
-- [ ] implement application/API;
+- [x] inspect initial UFW state;
+- [x] allow OpenSSH before firewall activation;
+- [x] enable UFW;
+- [x] apply default deny incoming / allow outgoing policy;
+- [x] validate new SSH access through the active firewall;
+- [x] install Nginx;
+- [x] validate Nginx systemd service;
+- [x] validate Nginx locally with HTTP 200 response;
+- [x] inspect UFW Nginx application profiles;
+- [x] allow Nginx HTTP on TCP/80;
+- [x] validate external HTTP access through the firewall.
+
+### Web Server Configuration & OpsLab Content
+
+- [x] inspect the default Nginx site configuration;
+- [x] identify the default Nginx web root and page;
+- [x] create `/var/www/opslab/html`;
+- [x] configure `marcos` ownership for OpsLab web content;
+- [x] create the initial OpsLab `index.html`;
+- [x] inspect `sites-available` and `sites-enabled`;
+- [x] create a dedicated OpsLab Nginx server block;
+- [x] enable the OpsLab site using a symbolic link;
+- [x] validate Nginx configuration with `nginx -t`;
+- [x] reload Nginx safely;
+- [x] validate the custom OpsLab page through the public IPv4.
+
+- [x] implement application/API;
+- [x] configure an application runtime/process;
+- [x] configure Nginx reverse proxy;
+- [x] keep the application port private/internal;
+
+
+## Pending
+
+
 - [ ] install PostgreSQL;
 - [ ] configure HTTPS;
 - [ ] configure backup procedures;
@@ -1039,10 +1536,11 @@ Pending:
 
 # Next Step
 
-Configure the UFW firewall.
+Begin the **Application Runtime & Reverse Proxy** phase.
 
-The SSH rule must be explicitly allowed and validated before enabling the
-firewall to avoid losing remote administrative access.
+The next objective is to run an application/API as a process inside the VPS,
+first validate it locally, and only then place Nginx in front of it as a reverse
+proxy.
 
 Initial intended flow:
 
@@ -1051,13 +1549,28 @@ Internet
    ↓
 UFW
    ↓
-SSH / HTTP / HTTPS
+Nginx — TCP/80 initially, TCP/443 later
    ↓
-Services
+reverse proxy
+   ↓
+127.0.0.1:<APP_PORT>
+   ↓
+application/API
 ```
 
-After the firewall baseline is configured and validated, the next major
-service will be Nginx.
+The application port should not be exposed directly to the public internet.
+Nginx will remain the public entry point and forward requests internally to the
+application process.
+
+Before automation, containers, CI/CD or orchestration are introduced, the next
+phase should focus on understanding:
+
+- application processes on Linux;
+- local ports and loopback networking;
+- application logs;
+- process/service lifecycle;
+- direct local API testing;
+- Nginx reverse proxy behavior.
 
 The project continues following the principle:
 
