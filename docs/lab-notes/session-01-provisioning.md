@@ -1,4 +1,5 @@
 # Session 01 — Provisioning
+## Provisioning / SSH / Linux / UFW / Nginx
 
 Date: 2026-08-09 — continued on 2026-08-10
 
