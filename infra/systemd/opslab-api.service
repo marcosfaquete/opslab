@@ -6,6 +6,7 @@ After=network.target
 Type=simple
 User=marcos
 WorkingDirectory=/var/www/opslab/app
+EnvironmentFile=/etc/opslab/opslab-api.env
 ExecStart=/home/marcos/.nvm/versions/node/v24.19.0/bin/node /var/www/opslab/app/server.js
 Restart=on-failure
 
