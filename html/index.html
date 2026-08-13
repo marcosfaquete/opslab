@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>OpsLab | Linux Cloud Lab</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #050816;
+            --bg-secondary: #0a1020;
+            --card: rgba(15, 23, 42, 0.72);
+            --border: rgba(148, 163, 184, 0.15);
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --green: #4ade80;
+            --blue: #38bdf8;
+            --purple: #a78bfa;
+            --red: #fb7185;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 30%),
+                radial-gradient(circle at 80% 70%, rgba(167, 139, 250, 0.08), transparent 30%),
+                var(--bg);
+
+            color: var(--text);
+            font-family: Inter, Arial, Helvetica, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* GRID DE FUNDO */
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+
+            background-image:
+                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+
+            background-size: 45px 45px;
+
+            mask-image: linear-gradient(
+                to bottom,
+                rgba(0,0,0,.8),
+                transparent
+            );
+
+            pointer-events: none;
+        }
+
+        /* LUZES FLUTUANTES */
+
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: .18;
+            pointer-events: none;
+            animation: float 10s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 350px;
+            height: 350px;
+            background: var(--blue);
+            top: -120px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--purple);
+            right: -150px;
+            bottom: -120px;
+            animation-delay: 2s;
+        }
+
+        @keyframes float {
+            from {
+                transform: translate(0, 0) scale(1);
+            }
+
+            to {
+                transform: translate(40px, 30px) scale(1.1);
+            }
+        }
+
+        /* CONTAINER */
+
+        .container {
+            width: min(1120px, 90%);
+            margin: auto;
+        }
+
+        /* HEADER */
+
+        header {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        nav {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: -.5px;
+        }
+
+        .logo span {
+            color: var(--green);
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 8px 13px;
+            border-radius: 999px;
+
+            border: 1px solid rgba(148, 163, 184, .2);
+            background: rgba(148, 163, 184, .06);
+
+            color: #cbd5e1;
+            font-size: .85rem;
+            transition: .25s ease;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+            box-shadow: 0 0 12px var(--muted);
+
+            animation: pulse 1.7s infinite;
+        }
+
+        @keyframes pulse {
+            50% {
+                opacity: .35;
+                transform: scale(.8);
+            }
+        }
+
+        .status[data-state="success"] {
+            border-color: rgba(74, 222, 128, .2);
+            background: rgba(74, 222, 128, .06);
+            color: #bbf7d0;
+        }
+
+        .status[data-state="success"] .status-dot {
+            background: var(--green);
+            box-shadow: 0 0 12px var(--green);
+        }
+
+        .status[data-state="error"] {
+            border-color: rgba(251, 113, 133, .24);
+            background: rgba(251, 113, 133, .07);
+            color: #fecdd3;
+        }
+
+        .status[data-state="error"] .status-dot {
+            background: var(--red);
+            box-shadow: 0 0 12px var(--red);
+            animation: none;
+        }
+
+        /* HERO */
+
+        .hero {
+            min-height: calc(100vh - 80px);
+
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            align-items: center;
+            gap: 70px;
+
+            padding: 80px 0;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            color: var(--blue);
+            font-size: .85rem;
+            font-weight: 600;
+
+            border: 1px solid rgba(56, 189, 248, .18);
+            background: rgba(56, 189, 248, .05);
+
+            padding: 8px 12px;
+            border-radius: 999px;
+
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 7vw, 6rem);
+            line-height: .95;
+            letter-spacing: -4px;
+
+            margin-bottom: 25px;
+        }
+
+        h1 .gradient {
+            background: linear-gradient(
+                90deg,
+                var(--green),
+                var(--blue),
+                var(--purple)
+            );
+
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .description {
+            max-width: 650px;
+            color: var(--muted);
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .description strong {
+            color: var(--text);
+        }
+
+        .tech-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .tech {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.025);
+            color: #cbd5e1;
+            font-size: .8rem;
+        }
+
+        /* TERMINAL */
+
+        .terminal {
+            position: relative;
+            border: 1px solid var(--border);
+            background: rgba(2, 6, 23, .82);
+
+            border-radius: 15px;
+            overflow: hidden;
+
+            box-shadow:
+                0 30px 80px rgba(0, 0, 0, .4),
+                0 0 80px rgba(56, 189, 248, .04);
+
+            animation: terminalEnter .9s ease forwards;
+        }
+
+        @keyframes terminalEnter {
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .terminal-header {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            padding: 0 16px;
+            border-bottom: 1px solid var(--border);
+
+            background: rgba(255,255,255,.02);
+        }
+
+        .circle {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .red {
+            background: #fb7185;
+        }
+
+        .yellow {
+            background: #facc15;
+        }
+
+        .green {
+            background: #4ade80;
+        }
+
+        .terminal-title {
+            margin-left: 10px;
+            color: #64748b;
+            font-size: .75rem;
+        }
+
+        .terminal-body {
+            padding: 25px;
+            min-height: 320px;
+
+            font-family: Consolas, Monaco, monospace;
+            font-size: .88rem;
+            line-height: 1.9;
+        }
+
+        .prompt {
+            color: var(--green);
+        }
+
+        .command {
+            color: #e2e8f0;
+        }
+
+        .output {
+            color: #64748b;
+        }
+
+        .success {
+            color: var(--green);
+        }
+
+        .blue {
+            color: var(--blue);
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--green);
+
+            vertical-align: middle;
+            margin-left: 4px;
+
+            animation: blink .8s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* CARDS */
+
+        .infra {
+            padding: 40px 0 100px;
+        }
+
+        .section-title {
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: .75rem;
+            margin-bottom: 20px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .card {
+            border: 1px solid var(--border);
+            background: var(--card);
+            backdrop-filter: blur(10px);
+
+            padding: 22px;
+            border-radius: 12px;
+
+            transition: .25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(56, 189, 248, .35);
+        }
+
+        .card-label {
+            color: #64748b;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 9px;
+        }
+
+        .card-value {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .online {
+            color: var(--green);
+        }
+
+        .configured {
+            color: #c4b5fd;
+        }
+
+        /* LIVE STATUS */
+
+        .live-status {
+            padding: 20px 0 70px;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 30px;
+            margin-bottom: 24px;
+        }
+
+        .section-heading h2 {
+            margin-top: 8px;
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            letter-spacing: -1.5px;
+        }
+
+        .section-description {
+            max-width: 650px;
+            margin-top: 10px;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .refresh-button {
+            min-width: 148px;
+            border: 1px solid rgba(56, 189, 248, .3);
+            border-radius: 10px;
+            padding: 11px 16px;
+            background: rgba(56, 189, 248, .08);
+            color: #bae6fd;
+            font: inherit;
+            font-size: .85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+
+        .refresh-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, .55);
+            background: rgba(56, 189, 248, .13);
+        }
+
+        .refresh-button:focus-visible {
+            outline: 2px solid var(--blue);
+            outline-offset: 3px;
+        }
+
+        .refresh-button:disabled {
+            cursor: wait;
+            opacity: .6;
+        }
+
+        .live-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .live-card {
+            --state-color: var(--blue);
+            position: relative;
+            min-height: 168px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 22px;
+            background: rgba(15, 23, 42, .62);
+            overflow: hidden;
+        }
+
+        .live-card::after {
+            content: "";
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            right: -55px;
+            bottom: -55px;
+            border-radius: 50%;
+            background: var(--state-color);
+            filter: blur(45px);
+            opacity: .12;
+        }
+
+        .live-card[data-state="success"] {
+            --state-color: var(--green);
+            border-color: rgba(74, 222, 128, .2);
+        }
+
+        .live-card[data-state="error"] {
+            --state-color: var(--red);
+            border-color: rgba(251, 113, 133, .22);
+        }
+
+        .live-card-header,
+        .services-header,
+        .service-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .live-card-header {
+            margin-bottom: 25px;
+        }
+
+        .endpoint,
+        .services-count,
+        .service-meta,
+        .update-meta {
+            color: #64748b;
+            font-size: .75rem;
+        }
+
+        .endpoint {
+            font-family: Consolas, Monaco, monospace;
+        }
+
+        .state-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border-radius: 999px;
+            padding: 6px 9px;
+            background: rgba(148, 163, 184, .08);
+            color: #cbd5e1;
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+        .state-badge::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--state-color);
+        }
+
+        .live-card h3 {
+            margin-bottom: 9px;
+            font-size: 1.15rem;
+        }
+
+        .live-detail {
+            color: var(--muted);
+            line-height: 1.55;
+            font-size: .9rem;
+        }
+
+        .update-meta {
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        .services-panel {
+            margin-top: 15px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(2, 6, 23, .56);
+            overflow: hidden;
+        }
+
+        .services-header {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .services-header h3 {
+            font-size: 1rem;
+        }
+
+        .services-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1px;
+            background: var(--border);
+        }
+
+        .service-item,
+        .services-message {
+            background: #070b18;
+            padding: 18px 22px;
+        }
+
+        .service-name {
+            font-weight: 700;
+        }
+
+        .service-meta {
+            margin-top: 5px;
+        }
+
+        .service-state {
+            flex: 0 0 auto;
+            border: 1px solid rgba(56, 189, 248, .18);
+            border-radius: 999px;
+            padding: 5px 9px;
+            color: #bae6fd;
+            font-size: .72rem;
+        }
+
+        .services-message {
+            grid-column: 1 / -1;
+            min-height: 82px;
+            display: grid;
+            place-items: center;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .services-message[data-state="error"] {
+            color: #fecdd3;
+        }
+
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 25px 0;
+            color: #475569;
+            font-size: .8rem;
+            text-align: center;
+        }
+
+        /* RESPONSIVO */
+
+        @media (max-width: 850px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 50px;
+            }
+
+            h1 {
+                letter-spacing: -2px;
+            }
+
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .section-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .live-grid,
+            .services-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .status {
+                font-size: .7rem;
+            }
+
+            .terminal-body {
+                font-size: .73rem;
+            }
+
+            .refresh-button {
+                width: 100%;
+            }
+
+            .services-header,
+            .service-item {
+                align-items: flex-start;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    Ops<span>Lab</span>
+                </div>
+
+                <div class="status" id="global-api-status" data-state="loading" role="status" aria-live="polite">
+                    <div class="status-dot"></div>
+                    <span id="global-api-label">Verificando API...</span>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+
+    <main class="container">
+
+        <section class="hero">
+
+            <div>
+                <div class="tag">
+                    ● CLOUD INFRASTRUCTURE LAB
+                </div>
+
+                <h1>
+                    Welcome to<br>
+                    <span class="gradient">OpsLab.</span>
+                </h1>
+
+                <p class="description">
+                    Um laboratório prático para explorar
+                    <strong>Linux, infraestrutura, redes, segurança e aplicações web</strong>
+                    em uma VPS real na nuvem.
+                </p>
+
+                <div class="tech-list">
+                    <div class="tech">Ubuntu 24.04 LTS</div>
+                    <div class="tech">DigitalOcean</div>
+                    <div class="tech">Nginx</div>
+                    <div class="tech">UFW</div>
+                    <div class="tech">SSH</div>
+                </div>
+            </div>
+
+
+            <div class="terminal">
+
+                <div class="terminal-header">
+                    <div class="circle red"></div>
+                    <div class="circle yellow"></div>
+                    <div class="circle green"></div>
+
+                    <div class="terminal-title">
+                        infrastructure overview
+                    </div>
+                </div>
+
+                <div class="terminal-body">
+
+                    <div>
+                        <span class="prompt">marcos@opslab-01:~$</span>
+                        <span class="command"> cat /etc/opslab/profile</span>
+                    </div>
+
+                    <div class="output">server=opslab-01</div>
+
+                    <br>
+
+                    <div>
+                        <span class="prompt">marcos@opslab-01:~$</span>
+                        <span class="command"> show configured firewall</span>
+                    </div>
+
+                    <div class="output">UFW · configured</div>
+
+                    <br>
+
+                    <div>
+                        <span class="prompt">marcos@opslab-01:~$</span>
+                        <span class="command"> show configured proxy</span>
+                    </div>
+
+                    <div class="output">Nginx · configured</div>
+
+                    <br>
+
+                    <div>
+                        <span class="prompt">marcos@opslab-01:~$</span>
+                        <span class="command"> live checks</span>
+                    </div>
+
+                    <div class="blue">↓ /api/health · /api/services</div>
+
+                    <br>
+
+                    <div>
+                        <span class="prompt">marcos@opslab-01:~$</span>
+                        <span class="cursor"></span>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+
+        <section class="live-status" aria-labelledby="live-status-title">
+            <div class="section-heading">
+                <div>
+                    <div class="section-title">STATUS DA APLICAÇÃO</div>
+                    <h2 id="live-status-title">Estado da aplicação</h2>
+                    <p class="section-description">
+                        Leituras independentes da API e do PostgreSQL, consultadas agora pelo navegador.
+                    </p>
+                </div>
+
+                <button class="refresh-button" id="refresh-button" type="button">Atualizar dados</button>
+            </div>
+
+            <div class="live-grid">
+                <article class="live-card" id="health-card" data-state="loading" aria-live="polite">
+                    <div class="live-card-header">
+                        <span class="endpoint">GET /api/health</span>
+                        <span class="state-badge" id="health-badge">Carregando</span>
+                    </div>
+                    <h3>API pública</h3>
+                    <p class="live-detail" id="health-detail">Verificando se a API está acessível...</p>
+                </article>
+
+                <article class="live-card" id="services-card" data-state="loading" aria-live="polite">
+                    <div class="live-card-header">
+                        <span class="endpoint">GET /api/services</span>
+                        <span class="state-badge" id="services-badge">Carregando</span>
+                    </div>
+                    <h3>Serviços no PostgreSQL</h3>
+                    <p class="live-detail" id="services-detail">Consultando os registros persistidos...</p>
+                </article>
+            </div>
+
+            <p class="update-meta">Última atualização: <time id="last-updated">aguardando</time></p>
+
+            <section class="services-panel" aria-labelledby="services-title">
+                <div class="services-header">
+                    <h3 id="services-title">Serviços registrados</h3>
+                    <span class="services-count" id="services-count">Consultando...</span>
+                </div>
+                <div class="services-list" id="services-list" aria-live="polite" aria-busy="true">
+                    <p class="services-message">Carregando serviços...</p>
+                </div>
+            </section>
+        </section>
+
+
+        <section class="infra">
+
+            <div class="section-title">
+                INFRAESTRUTURA CONFIGURADA
+            </div>
+
+            <div class="cards">
+
+                <div class="card">
+                    <div class="card-label">Server</div>
+                    <div class="card-value">opslab-01</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Operating System</div>
+                    <div class="card-value">Ubuntu 24.04</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Web Server</div>
+                    <div class="card-value configured">Nginx · Configured</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Firewall</div>
+                    <div class="card-value configured">UFW · Configured</div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+        OpsLab · Linux · Cloud · Infrastructure · DevOps
+    </footer>
+
+    <script>
+        "use strict";
+
+        const REQUEST_TIMEOUT_MS = 6000;
+        const elements = {
+            globalStatus: document.getElementById("global-api-status"),
+            globalLabel: document.getElementById("global-api-label"),
+            healthCard: document.getElementById("health-card"),
+            healthBadge: document.getElementById("health-badge"),
+            healthDetail: document.getElementById("health-detail"),
+            servicesCard: document.getElementById("services-card"),
+            servicesBadge: document.getElementById("services-badge"),
+            servicesDetail: document.getElementById("services-detail"),
+            servicesList: document.getElementById("services-list"),
+            servicesCount: document.getElementById("services-count"),
+            lastUpdated: document.getElementById("last-updated"),
+            refreshButton: document.getElementById("refresh-button")
+        };
+
+        function setCardState(card, badge, state, label) {
+            card.dataset.state = state;
+            badge.textContent = label;
+        }
+
+        function createMessage(message, state) {
+            const paragraph = document.createElement("p");
+            paragraph.className = "services-message";
+            paragraph.dataset.state = state;
+            paragraph.textContent = message;
+            return paragraph;
+        }
+
+        function describeError(error) {
+            if (error.name === "AbortError") {
+                return "A consulta excedeu o limite de 6 segundos. Tente atualizar novamente.";
+            }
+
+            return "Não foi possível concluir a consulta agora. Tente atualizar novamente.";
+        }
+
+        async function fetchJson(url) {
+            const controller = new AbortController();
+            const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+            try {
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: { "Accept": "application/json" },
+                    cache: "no-store",
+                    signal: controller.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+
+                try {
+                    return await response.json();
+                } catch {
+                    throw new Error("invalid_json_response");
+                }
+            } finally {
+                window.clearTimeout(timeoutId);
+            }
+        }
+
+        function renderServices(services) {
+            elements.servicesList.replaceChildren();
+            elements.servicesList.setAttribute("aria-busy", "false");
+            elements.servicesCount.textContent = services.length + " " + (services.length === 1 ? "registro" : "registros");
+
+            if (services.length === 0) {
+                elements.servicesList.appendChild(
+                    createMessage("A consulta funcionou, mas ainda não há serviços registrados.", "empty")
+                );
+                return;
+            }
+
+            services.forEach((service) => {
+                const item = document.createElement("article");
+                item.className = "service-item";
+
+                const identity = document.createElement("div");
+                const name = document.createElement("p");
+                const metadata = document.createElement("p");
+                const state = document.createElement("span");
+
+                name.className = "service-name";
+                metadata.className = "service-meta";
+                state.className = "service-state";
+
+                name.textContent = typeof service.name === "string" ? service.name : "Serviço sem nome";
+                metadata.textContent = service.id == null ? "ID indisponível" : "ID " + String(service.id);
+                state.textContent = typeof service.status === "string" ? service.status : "status desconhecido";
+
+                identity.append(name, metadata);
+                item.append(identity, state);
+                elements.servicesList.appendChild(item);
+            });
+        }
+
+        async function loadHealth() {
+            setCardState(elements.healthCard, elements.healthBadge, "loading", "Carregando");
+            elements.healthDetail.textContent = "Verificando se a API está acessível...";
+            elements.globalStatus.dataset.state = "loading";
+            elements.globalLabel.textContent = "Verificando API...";
+
+            try {
+                const health = await fetchJson("/api/health");
+
+                if (!health || health.status !== "ok") {
+                    throw new Error("unexpected_health_response");
+                }
+
+                setCardState(elements.healthCard, elements.healthBadge, "success", "Acessível");
+                elements.healthDetail.textContent = "A API respondeu com sucesso ao health check público.";
+                elements.globalStatus.dataset.state = "success";
+                elements.globalLabel.textContent = "API acessível";
+            } catch (error) {
+                setCardState(elements.healthCard, elements.healthBadge, "error", "Indisponível");
+                elements.healthDetail.textContent = describeError(error);
+                elements.globalStatus.dataset.state = "error";
+                elements.globalLabel.textContent = "API indisponível";
+                throw error;
+            }
+        }
+
+        async function loadServices() {
+            setCardState(elements.servicesCard, elements.servicesBadge, "loading", "Carregando");
+            elements.servicesDetail.textContent = "Consultando os registros persistidos...";
+            elements.servicesCount.textContent = "Consultando...";
+            elements.servicesList.setAttribute("aria-busy", "true");
+            elements.servicesList.replaceChildren(createMessage("Carregando serviços...", "loading"));
+
+            try {
+                const services = await fetchJson("/api/services");
+
+                if (!Array.isArray(services)) {
+                    throw new Error("unexpected_services_response");
+                }
+
+                setCardState(elements.servicesCard, elements.servicesBadge, "success", "Consulta OK");
+                elements.servicesDetail.textContent = "A API consultou o PostgreSQL e retornou uma lista válida.";
+                renderServices(services);
+            } catch (error) {
+                const message = describeError(error);
+                setCardState(elements.servicesCard, elements.servicesBadge, "error", "Falha na consulta");
+                elements.servicesDetail.textContent = message;
+                elements.servicesCount.textContent = "Não disponível";
+                elements.servicesList.setAttribute("aria-busy", "false");
+                elements.servicesList.replaceChildren(createMessage(message, "error"));
+                throw error;
+            }
+        }
+
+        async function refreshDashboard() {
+            elements.refreshButton.disabled = true;
+            elements.refreshButton.textContent = "Atualizando...";
+
+            await Promise.allSettled([loadHealth(), loadServices()]);
+
+            const updatedAt = new Date();
+            elements.lastUpdated.dateTime = updatedAt.toISOString();
+            elements.lastUpdated.textContent = new Intl.DateTimeFormat("pt-BR", {
+                dateStyle: "short",
+                timeStyle: "medium"
+            }).format(updatedAt);
+            elements.refreshButton.disabled = false;
+            elements.refreshButton.textContent = "Atualizar dados";
+        }
+
+        elements.refreshButton.addEventListener("click", refreshDashboard);
+        refreshDashboard();
+    </script>
+
+</body>
+</html>
