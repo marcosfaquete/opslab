@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+infra/env/*.env
+!infra/env/*.env.example
 
 # Private keys and certificates
 *.pem
@@ -12,6 +14,9 @@ secrets/
 
 # Dependencies
 node_modules/
+
+# Local source backups
+server.js.bak-*
 
 # Operating system files
 .DS_Store
