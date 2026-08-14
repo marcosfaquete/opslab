@@ -1,10 +1,141 @@
 const http = require("node:http");
+const fs = require("node:fs/promises");
+const os = require("node:os");
 const { Pool } = require("pg");
 
 const HOST = "127.0.0.1";
-const PORT = 3000;
+const PORT = parsePort(process.env.PORT || "3000");
+const PUBLIC_WRITES_ENABLED = false;
+const BYTES_PER_MEGABYTE = 1024 * 1024;
 
 const pool = new Pool();
+
+function parsePort(value) {
+  const port = Number(value);
+
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error("invalid_port");
+  }
+
+  return port;
+}
+
+function round(value, precision = 1) {
+  const factor = 10 ** precision;
+  return Math.round(value * factor) / factor;
+}
+
+function bytesToMegabytes(bytes) {
+  return round(bytes / BYTES_PER_MEGABYTE);
+}
+
+function sendJson(res, statusCode, body, headers = {}) {
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json",
+    ...headers
+  });
+  res.end(JSON.stringify(body));
+}
+
+async function readOperatingSystemName() {
+  try {
+    const release = await fs.readFile("/etc/os-release", "utf8");
+    const prettyNameLine = release
+      .split("\n")
+      .find((line) => line.startsWith("PRETTY_NAME="));
+
+    if (!prettyNameLine) {
+      return os.type();
+    }
+
+    const value = prettyNameLine.slice("PRETTY_NAME=".length).trim();
+    const hasMatchingQuotes =
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"));
+
+    return hasMatchingQuotes ? value.slice(1, -1) : value;
+  } catch {
+    return os.type();
+  }
+}
+
+async function readMemoryBytes() {
+  try {
+    const meminfo = await fs.readFile("/proc/meminfo", "utf8");
+    const values = new Map();
+
+    for (const line of meminfo.split("\n")) {
+      const match = line.match(/^([A-Za-z_()]+):\s+(\d+)\s+kB$/);
+
+      if (match) {
+        values.set(match[1], Number(match[2]) * 1024);
+      }
+    }
+
+    const totalBytes = values.get("MemTotal");
+    const availableBytes = values.get("MemAvailable");
+
+    if (Number.isFinite(totalBytes) && Number.isFinite(availableBytes)) {
+      return { totalBytes, availableBytes };
+    }
+  } catch {
+    // Fall through to the portable Node.js values below.
+  }
+
+  return {
+    totalBytes: os.totalmem(),
+    availableBytes: os.freemem()
+  };
+}
+
+async function getSystemSnapshot() {
+  const [operatingSystem, memoryBytes] = await Promise.all([
+    readOperatingSystemName(),
+    readMemoryBytes()
+  ]);
+  const totalBytes = Math.max(memoryBytes.totalBytes, 0);
+  const availableBytes = Math.min(
+    Math.max(memoryBytes.availableBytes, 0),
+    totalBytes
+  );
+  const usedBytes = Math.max(totalBytes - availableBytes, 0);
+  const [one, five, fifteen] = os.loadavg();
+
+  return {
+    hostname: os.hostname(),
+    os: operatingSystem,
+    kernel: os.release(),
+    uptimeSeconds: Math.floor(os.uptime()),
+    memory: {
+      totalMb: bytesToMegabytes(totalBytes),
+      availableMb: bytesToMegabytes(availableBytes),
+      usedMb: bytesToMegabytes(usedBytes),
+      usedPercent: totalBytes === 0 ? 0 : round((usedBytes / totalBytes) * 100)
+    },
+    loadAverage: {
+      one: round(one, 2),
+      five: round(five, 2),
+      fifteen: round(fifteen, 2)
+    },
+    checkedAt: new Date().toISOString()
+  };
+}
+
+function getRuntimeSnapshot() {
+  const memory = process.memoryUsage();
+
+  return {
+    status: "online",
+    nodeVersion: process.version,
+    uptimeSeconds: Math.floor(process.uptime()),
+    memory: {
+      rssMb: bytesToMegabytes(memory.rss),
+      heapUsedMb: bytesToMegabytes(memory.heapUsed),
+      heapTotalMb: bytesToMegabytes(memory.heapTotal)
+    },
+    checkedAt: new Date().toISOString()
+  };
+}
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -27,10 +158,43 @@ function readJsonBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
+  const serviceMatch = req.url.match(/^\/services\/(\d+)$/);
+  const isBlockedWrite =
+    (req.method === "POST" && req.url === "/services") ||
+    ((req.method === "PUT" || req.method === "DELETE") && serviceMatch);
+
+  // Public service mutations are intentionally disabled. This guard must stay
+  // before request-body parsing and database access.
+  if (!PUBLIC_WRITES_ENABLED && isBlockedWrite) {
+    sendJson(
+      res,
+      405,
+      { error: "method_not_allowed" },
+      { Allow: "GET" }
+    );
+    return;
+  }
+
   // HEALTH CHECK
   if (req.method === "GET" && req.url === "/health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok" }));
+    sendJson(res, 200, { status: "ok" });
+    return;
+  }
+
+  // SYSTEM METRICS - informações públicas explicitamente selecionadas
+  if (req.method === "GET" && req.url === "/system") {
+    try {
+      sendJson(res, 200, await getSystemSnapshot());
+    } catch (error) {
+      console.error("System metrics failed:", error);
+      sendJson(res, 500, { error: "system_metrics_unavailable" });
+    }
+    return;
+  }
+
+  // NODE RUNTIME - sem ambiente, argumentos, PID ou caminhos internos
+  if (req.method === "GET" && req.url === "/runtime") {
+    sendJson(res, 200, getRuntimeSnapshot());
     return;
   }
 
@@ -93,8 +257,6 @@ const server = http.createServer(async (req, res) => {
 
     return;
   }
-
-  const serviceMatch = req.url.match(/^\/services\/(\d+)$/);
 
   // UPDATE - atualizar serviço
   if (req.method === "PUT" && serviceMatch) {

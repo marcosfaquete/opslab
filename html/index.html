@@ -429,6 +429,7 @@
         .card-value {
             font-weight: 700;
             font-size: 1rem;
+            overflow-wrap: anywhere;
         }
 
         .online {
@@ -798,7 +799,7 @@
                         <span class="command"> cat /etc/opslab/profile</span>
                     </div>
 
-                    <div class="output">server=opslab-01</div>
+                    <div class="output">server=<span id="terminal-hostname">consultando</span></div>
 
                     <br>
 
@@ -825,7 +826,7 @@
                         <span class="command"> live checks</span>
                     </div>
 
-                    <div class="blue">↓ /api/health · /api/services</div>
+                    <div class="blue">↓ /api/health · /api/services · /api/system · /api/runtime</div>
 
                     <br>
 
@@ -846,7 +847,7 @@
                     <div class="section-title">STATUS DA APLICAÇÃO</div>
                     <h2 id="live-status-title">Estado da aplicação</h2>
                     <p class="section-description">
-                        Leituras independentes da API e do PostgreSQL, consultadas agora pelo navegador.
+                        Leituras independentes da API, PostgreSQL, sistema operacional e runtime Node.js.
                     </p>
                 </div>
 
@@ -870,6 +871,24 @@
                     </div>
                     <h3>Serviços no PostgreSQL</h3>
                     <p class="live-detail" id="services-detail">Consultando os registros persistidos...</p>
+                </article>
+
+                <article class="live-card" id="system-card" data-state="loading" aria-live="polite">
+                    <div class="live-card-header">
+                        <span class="endpoint">GET /api/system</span>
+                        <span class="state-badge" id="system-badge">Carregando</span>
+                    </div>
+                    <h3>Sistema operacional</h3>
+                    <p class="live-detail" id="system-detail">Coletando métricas do host...</p>
+                </article>
+
+                <article class="live-card" id="runtime-card" data-state="loading" aria-live="polite">
+                    <div class="live-card-header">
+                        <span class="endpoint">GET /api/runtime</span>
+                        <span class="state-badge" id="runtime-badge">Carregando</span>
+                    </div>
+                    <h3>Runtime Node.js</h3>
+                    <p class="live-detail" id="runtime-detail">Consultando o processo da API...</p>
                 </article>
             </div>
 
@@ -896,13 +915,53 @@
             <div class="cards">
 
                 <div class="card">
-                    <div class="card-label">Server</div>
-                    <div class="card-value">opslab-01</div>
+                    <div class="card-label">Servidor</div>
+                    <div class="card-value" id="system-hostname">Carregando...</div>
                 </div>
 
                 <div class="card">
-                    <div class="card-label">Operating System</div>
-                    <div class="card-value">Ubuntu 24.04</div>
+                    <div class="card-label">Sistema operacional</div>
+                    <div class="card-value" id="system-os">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Kernel</div>
+                    <div class="card-value" id="system-kernel">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Uptime da VPS</div>
+                    <div class="card-value" id="system-uptime">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Memória usada / total</div>
+                    <div class="card-value" id="system-memory">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Memória utilizada</div>
+                    <div class="card-value" id="system-memory-percent">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Load average · 1 min</div>
+                    <div class="card-value" id="system-load">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Versão do Node.js</div>
+                    <div class="card-value" id="runtime-node-version">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Uptime do processo</div>
+                    <div class="card-value" id="runtime-uptime">Carregando...</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-label">Memória RSS</div>
+                    <div class="card-value" id="runtime-rss">Carregando...</div>
                 </div>
 
                 <div class="card">
@@ -941,6 +1000,23 @@
             servicesDetail: document.getElementById("services-detail"),
             servicesList: document.getElementById("services-list"),
             servicesCount: document.getElementById("services-count"),
+            systemCard: document.getElementById("system-card"),
+            systemBadge: document.getElementById("system-badge"),
+            systemDetail: document.getElementById("system-detail"),
+            runtimeCard: document.getElementById("runtime-card"),
+            runtimeBadge: document.getElementById("runtime-badge"),
+            runtimeDetail: document.getElementById("runtime-detail"),
+            terminalHostname: document.getElementById("terminal-hostname"),
+            systemHostname: document.getElementById("system-hostname"),
+            systemOs: document.getElementById("system-os"),
+            systemKernel: document.getElementById("system-kernel"),
+            systemUptime: document.getElementById("system-uptime"),
+            systemMemory: document.getElementById("system-memory"),
+            systemMemoryPercent: document.getElementById("system-memory-percent"),
+            systemLoad: document.getElementById("system-load"),
+            runtimeNodeVersion: document.getElementById("runtime-node-version"),
+            runtimeUptime: document.getElementById("runtime-uptime"),
+            runtimeRss: document.getElementById("runtime-rss"),
             lastUpdated: document.getElementById("last-updated"),
             refreshButton: document.getElementById("refresh-button")
         };
@@ -964,6 +1040,90 @@
             }
 
             return "Não foi possível concluir a consulta agora. Tente atualizar novamente.";
+        }
+
+        function isFiniteNumber(value) {
+            return typeof value === "number" && Number.isFinite(value);
+        }
+
+        function formatNumber(value, maximumFractionDigits = 1) {
+            return new Intl.NumberFormat("pt-BR", {
+                maximumFractionDigits
+            }).format(value);
+        }
+
+        function formatDuration(seconds) {
+            const totalSeconds = Math.max(0, Math.floor(seconds));
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const parts = [];
+
+            if (days > 0) {
+                parts.push(days + "d");
+            }
+
+            if (hours > 0 || days > 0) {
+                parts.push(hours + "h");
+            }
+
+            parts.push(minutes + "min");
+            return parts.join(" ");
+        }
+
+        function setSystemMetrics(message) {
+            elements.terminalHostname.textContent = message;
+            elements.systemHostname.textContent = message;
+            elements.systemOs.textContent = message;
+            elements.systemKernel.textContent = message;
+            elements.systemUptime.textContent = message;
+            elements.systemMemory.textContent = message;
+            elements.systemMemoryPercent.textContent = message;
+            elements.systemLoad.textContent = message;
+        }
+
+        function setRuntimeMetrics(message) {
+            elements.runtimeNodeVersion.textContent = message;
+            elements.runtimeUptime.textContent = message;
+            elements.runtimeRss.textContent = message;
+        }
+
+        function validateSystemResponse(system) {
+            if (
+                !system ||
+                typeof system.hostname !== "string" ||
+                typeof system.os !== "string" ||
+                typeof system.kernel !== "string" ||
+                !isFiniteNumber(system.uptimeSeconds) ||
+                !system.memory ||
+                !isFiniteNumber(system.memory.totalMb) ||
+                !isFiniteNumber(system.memory.availableMb) ||
+                !isFiniteNumber(system.memory.usedMb) ||
+                !isFiniteNumber(system.memory.usedPercent) ||
+                !system.loadAverage ||
+                !isFiniteNumber(system.loadAverage.one) ||
+                !isFiniteNumber(system.loadAverage.five) ||
+                !isFiniteNumber(system.loadAverage.fifteen) ||
+                typeof system.checkedAt !== "string"
+            ) {
+                throw new Error("unexpected_system_response");
+            }
+        }
+
+        function validateRuntimeResponse(runtime) {
+            if (
+                !runtime ||
+                runtime.status !== "online" ||
+                typeof runtime.nodeVersion !== "string" ||
+                !isFiniteNumber(runtime.uptimeSeconds) ||
+                !runtime.memory ||
+                !isFiniteNumber(runtime.memory.rssMb) ||
+                !isFiniteNumber(runtime.memory.heapUsedMb) ||
+                !isFiniteNumber(runtime.memory.heapTotalMb) ||
+                typeof runtime.checkedAt !== "string"
+            ) {
+                throw new Error("unexpected_runtime_response");
+            }
         }
 
         async function fetchJson(url) {
@@ -1081,11 +1241,70 @@
             }
         }
 
+        async function loadSystem() {
+            setCardState(elements.systemCard, elements.systemBadge, "loading", "Carregando");
+            elements.systemDetail.textContent = "Coletando métricas do host...";
+            setSystemMetrics("Carregando...");
+
+            try {
+                const system = await fetchJson("/api/system");
+                validateSystemResponse(system);
+
+                setCardState(elements.systemCard, elements.systemBadge, "success", "Coleta OK");
+                elements.systemDetail.textContent = "Métricas públicas do sistema operacional atualizadas.";
+                elements.terminalHostname.textContent = system.hostname;
+                elements.systemHostname.textContent = system.hostname;
+                elements.systemOs.textContent = system.os;
+                elements.systemKernel.textContent = system.kernel;
+                elements.systemUptime.textContent = formatDuration(system.uptimeSeconds);
+                elements.systemMemory.textContent =
+                    formatNumber(system.memory.usedMb) + " MB / " +
+                    formatNumber(system.memory.totalMb) + " MB";
+                elements.systemMemoryPercent.textContent =
+                    formatNumber(system.memory.usedPercent) + "%";
+                elements.systemLoad.textContent =
+                    formatNumber(system.loadAverage.one, 2);
+            } catch (error) {
+                setCardState(elements.systemCard, elements.systemBadge, "error", "Indisponível");
+                elements.systemDetail.textContent = describeError(error);
+                setSystemMetrics("Indisponível");
+                throw error;
+            }
+        }
+
+        async function loadRuntime() {
+            setCardState(elements.runtimeCard, elements.runtimeBadge, "loading", "Carregando");
+            elements.runtimeDetail.textContent = "Consultando o processo da API...";
+            setRuntimeMetrics("Carregando...");
+
+            try {
+                const runtime = await fetchJson("/api/runtime");
+                validateRuntimeResponse(runtime);
+
+                setCardState(elements.runtimeCard, elements.runtimeBadge, "success", "Online");
+                elements.runtimeDetail.textContent = "Runtime Node.js da API respondendo normalmente.";
+                elements.runtimeNodeVersion.textContent = runtime.nodeVersion;
+                elements.runtimeUptime.textContent = formatDuration(runtime.uptimeSeconds);
+                elements.runtimeRss.textContent =
+                    formatNumber(runtime.memory.rssMb) + " MB";
+            } catch (error) {
+                setCardState(elements.runtimeCard, elements.runtimeBadge, "error", "Indisponível");
+                elements.runtimeDetail.textContent = describeError(error);
+                setRuntimeMetrics("Indisponível");
+                throw error;
+            }
+        }
+
         async function refreshDashboard() {
             elements.refreshButton.disabled = true;
             elements.refreshButton.textContent = "Atualizando...";
 
-            await Promise.allSettled([loadHealth(), loadServices()]);
+            await Promise.allSettled([
+                loadHealth(),
+                loadServices(),
+                loadSystem(),
+                loadRuntime()
+            ]);
 
             const updatedAt = new Date();
             elements.lastUpdated.dateTime = updatedAt.toISOString();
