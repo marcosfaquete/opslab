@@ -1003,7 +1003,6 @@
         <section class="live-status" aria-labelledby="live-status-title">
             <div class="section-heading">
                 <div>
-                    <div class="section-title">STATUS DA APLICAÇÃO</div>
                     <h2 id="live-status-title">Estado da aplicação</h2>
                     <p class="section-description">
                         Leituras independentes da API, PostgreSQL, sistema operacional e runtime Node.js.
@@ -1057,7 +1056,7 @@
                 </span>
                 <span>
                     Próxima leitura ao vivo em <time id="refresh-countdown">15s</time>
-                    · health/services a cada 60s · histórico a cada 5min
+                    · cards escalonados a cada 15s · histórico a cada 5min
                 </span>
                 <span>Última atualização: <time id="last-updated">aguardando</time></span>
             </div>
@@ -1152,9 +1151,6 @@
                 <div>
                     <div class="section-title">HISTÓRICO DE MONITORAMENTO</div>
                     <h2 id="history-title">Comportamento ao longo do tempo</h2>
-                    <p class="section-description">
-                        Snapshots reais coletados pelo servidor a cada cinco minutos após a aplicação da migration 002.
-                    </p>
                 </div>
             </div>
 
@@ -1200,9 +1196,6 @@
                 </article>
             </div>
 
-            <p class="history-note">
-                Nenhum dado é simulado. Enquanto a migration não estiver aplicada, esta seção informa a indisponibilidade.
-            </p>
         </section>
 
     </main>
@@ -1216,8 +1209,8 @@
         "use strict";
 
         const REQUEST_TIMEOUT_MS = 6000;
-        const LIVE_METRICS_INTERVAL_MS = 15000;
-        const CORE_STATUS_INTERVAL_MS = 60000;
+        const CARD_REFRESH_INTERVAL_MS = 15000;
+        const CARD_REFRESH_STAGGER_MS = 1000;
         const HISTORY_INTERVAL_MS = 300000;
         const COUNTDOWN_INTERVAL_MS = 1000;
         const ALLOWED_HISTORY_HOURS = new Set([1, 6, 24, 168]);
@@ -1267,13 +1260,11 @@
 
         const inFlight = new Map();
         const scheduleTimers = {
-            live: null,
-            core: null,
+            cards: null,
             history: null
         };
         const nextRunAt = {
-            live: null,
-            core: null,
+            cards: null,
             history: null
         };
         const validData = {
@@ -1286,8 +1277,13 @@
         let currentHistoryHours = 24;
         let lastHistoryPoints = [];
         let dashboardRefreshPromise = null;
+        let cardRefreshPromise = null;
+        let cardRefreshQueued = false;
         let countdownTimer = null;
         let resizeTimer = null;
+        let staggerDelayTimer = null;
+        let staggerDelayResolve = null;
+        let automaticUpdateVersion = 0;
 
         function setCardState(card, badge, state, label) {
             card.dataset.state = state;
@@ -1903,6 +1899,75 @@
             });
         }
 
+        function clearStaggerDelay() {
+            if (staggerDelayTimer !== null) {
+                window.clearTimeout(staggerDelayTimer);
+                staggerDelayTimer = null;
+            }
+
+            if (staggerDelayResolve !== null) {
+                const resolve = staggerDelayResolve;
+                staggerDelayResolve = null;
+                resolve(false);
+            }
+        }
+
+        function waitForStagger(delay) {
+            if (delay <= 0) {
+                return Promise.resolve(true);
+            }
+
+            return new Promise((resolve) => {
+                staggerDelayResolve = resolve;
+                staggerDelayTimer = window.setTimeout(() => {
+                    staggerDelayTimer = null;
+                    staggerDelayResolve = null;
+                    resolve(true);
+                }, delay);
+            });
+        }
+
+        function runStaggeredCardRefresh(queueIfBusy = false) {
+            if (cardRefreshPromise) {
+                if (!queueIfBusy) {
+                    return cardRefreshPromise;
+                }
+
+                cardRefreshQueued = true;
+                return cardRefreshPromise.then(() => {
+                    if (!cardRefreshQueued || document.hidden) {
+                        return undefined;
+                    }
+
+                    cardRefreshQueued = false;
+                    return runStaggeredCardRefresh();
+                });
+            }
+
+            const cycleStartedAt = Date.now();
+            const tasks = [loadHealth, loadRuntime, loadSystem, loadServices];
+
+            cardRefreshPromise = (async () => {
+                for (let index = 0; index < tasks.length; index += 1) {
+                    const targetTime = cycleStartedAt +
+                        (index * CARD_REFRESH_STAGGER_MS);
+                    const canContinue = await waitForStagger(
+                        Math.max(0, targetTime - Date.now())
+                    );
+
+                    if (!canContinue || document.hidden) {
+                        return;
+                    }
+
+                    await Promise.allSettled([tasks[index]()]);
+                }
+            })().finally(() => {
+                cardRefreshPromise = null;
+            });
+
+            return cardRefreshPromise;
+        }
+
         function clearSchedule(name) {
             if (scheduleTimers[name] !== null) {
                 window.clearTimeout(scheduleTimers[name]);
@@ -1912,7 +1977,7 @@
             nextRunAt[name] = null;
         }
 
-        function schedule(name, interval, task) {
+        function schedule(name, interval, task, version = automaticUpdateVersion) {
             clearSchedule(name);
 
             if (document.hidden) {
@@ -1923,47 +1988,78 @@
             scheduleTimers[name] = window.setTimeout(async () => {
                 scheduleTimers[name] = null;
 
-                if (!document.hidden) {
+                if (!document.hidden && version === automaticUpdateVersion) {
                     await Promise.allSettled([task()]);
-                    schedule(name, interval, task);
+
+                    if (!document.hidden && version === automaticUpdateVersion) {
+                        schedule(name, interval, task, version);
+                    }
                 }
             }, interval);
         }
 
+        function scheduleCardRefresh(
+            delay = CARD_REFRESH_INTERVAL_MS,
+            version = automaticUpdateVersion
+        ) {
+            clearSchedule("cards");
+
+            if (document.hidden || version !== automaticUpdateVersion) {
+                return;
+            }
+
+            nextRunAt.cards = Date.now() + delay;
+            scheduleTimers.cards = window.setTimeout(async () => {
+                scheduleTimers.cards = null;
+
+                if (document.hidden || version !== automaticUpdateVersion) {
+                    return;
+                }
+
+                const cycleStartedAt = Date.now();
+                await runStaggeredCardRefresh();
+
+                if (!document.hidden && version === automaticUpdateVersion) {
+                    const elapsed = Date.now() - cycleStartedAt;
+                    scheduleCardRefresh(
+                        Math.max(0, CARD_REFRESH_INTERVAL_MS - elapsed),
+                        version
+                    );
+                }
+            }, delay);
+        }
+
         function startAutomaticUpdates() {
+            automaticUpdateVersion += 1;
+            const version = automaticUpdateVersion;
+
             elements.autoRefreshState.dataset.state = "active";
             elements.autoRefreshState.textContent = "Atualização automática ativa";
 
-            schedule(
-                "live",
-                LIVE_METRICS_INTERVAL_MS,
-                () => Promise.allSettled([loadSystem(), loadRuntime()])
-            );
-            schedule(
-                "core",
-                CORE_STATUS_INTERVAL_MS,
-                () => Promise.allSettled([loadHealth(), loadServices()])
-            );
-            schedule("history", HISTORY_INTERVAL_MS, loadHistory);
+            scheduleCardRefresh(CARD_REFRESH_INTERVAL_MS, version);
+            schedule("history", HISTORY_INTERVAL_MS, loadHistory, version);
             updateCountdown();
         }
 
         function pauseAutomaticUpdates() {
+            automaticUpdateVersion += 1;
             Object.keys(scheduleTimers).forEach(clearSchedule);
+            clearStaggerDelay();
+            cardRefreshQueued = false;
             elements.autoRefreshState.dataset.state = "paused";
             elements.autoRefreshState.textContent = "Atualização automática pausada";
             elements.refreshCountdown.textContent = "pausada";
         }
 
         function updateCountdown() {
-            if (document.hidden || nextRunAt.live === null) {
+            if (document.hidden || nextRunAt.cards === null) {
                 elements.refreshCountdown.textContent = "pausada";
                 return;
             }
 
             const seconds = Math.max(
                 0,
-                Math.ceil((nextRunAt.live - Date.now()) / 1000)
+                Math.ceil((nextRunAt.cards - Date.now()) / 1000)
             );
             elements.refreshCountdown.textContent = String(seconds) + "s";
         }
@@ -1977,10 +2073,7 @@
             elements.refreshButton.textContent = "Atualizando...";
 
             dashboardRefreshPromise = Promise.allSettled([
-                loadHealth(),
-                loadServices(),
-                loadSystem(),
-                loadRuntime(),
+                runStaggeredCardRefresh(true),
                 loadHistory()
             ]).finally(() => {
                 dashboardRefreshPromise = null;
@@ -2020,7 +2113,18 @@
             if (document.hidden) {
                 pauseAutomaticUpdates();
             } else {
-                refreshDashboard();
+                const pendingRefresh = dashboardRefreshPromise;
+
+                if (pendingRefresh) {
+                    pendingRefresh.finally(() => {
+                        if (!document.hidden) {
+                            refreshDashboard();
+                        }
+                    });
+                } else {
+                    refreshDashboard();
+                }
+
                 startAutomaticUpdates();
             }
         });
