@@ -7,8 +7,42 @@ const HOST = "127.0.0.1";
 const PORT = parsePort(process.env.PORT || "3000");
 const PUBLIC_WRITES_ENABLED = false;
 const BYTES_PER_MEGABYTE = 1024 * 1024;
+const DEFAULT_HISTORY_HOURS = 24;
+const MAX_HISTORY_POINTS = 2016;
+const ALLOWED_HISTORY_HOURS = new Set([1, 6, 24, 168]);
 
 const pool = new Pool();
+
+const HISTORY_SELECT_SQL = [
+  "SELECT",
+  '  collected_at AS "collectedAt",',
+  '  api_reachable AS "apiReachable",',
+  '  system_uptime_seconds AS "systemUptimeSeconds",',
+  '  memory_total_mb AS "memoryTotalMb",',
+  '  memory_available_mb AS "memoryAvailableMb",',
+  '  memory_used_mb AS "memoryUsedMb",',
+  '  memory_used_percent AS "memoryUsedPercent",',
+  '  load_one AS "loadOne",',
+  '  load_five AS "loadFive",',
+  '  load_fifteen AS "loadFifteen",',
+  '  process_uptime_seconds AS "processUptimeSeconds",',
+  '  process_rss_mb AS "processRssMb",',
+  '  process_heap_used_mb AS "processHeapUsedMb",',
+  '  process_heap_total_mb AS "processHeapTotalMb"',
+  "FROM (",
+  "  SELECT",
+  "    collected_at, api_reachable, system_uptime_seconds,",
+  "    memory_total_mb, memory_available_mb, memory_used_mb,",
+  "    memory_used_percent, load_one, load_five, load_fifteen,",
+  "    process_uptime_seconds, process_rss_mb,",
+  "    process_heap_used_mb, process_heap_total_mb",
+  "  FROM public.monitoring_snapshots",
+  "  WHERE collected_at >= now() - ($1::integer * interval '1 hour')",
+  "  ORDER BY collected_at DESC",
+  "  LIMIT $2",
+  ") AS recent",
+  "ORDER BY collected_at ASC;"
+].join("\n");
 
 function parsePort(value) {
   const port = Number(value);
@@ -137,6 +171,89 @@ function getRuntimeSnapshot() {
   };
 }
 
+function parseHistoryHours(searchParams) {
+  const parameterNames = [...new Set(searchParams.keys())];
+  const hourValues = searchParams.getAll("hours");
+
+  if (
+    parameterNames.some((name) => name !== "hours") ||
+    hourValues.length > 1
+  ) {
+    throw new Error("invalid_history_query");
+  }
+
+  if (hourValues.length === 0) {
+    return DEFAULT_HISTORY_HOURS;
+  }
+
+  const value = hourValues[0];
+
+  if (!/^\d+$/.test(value)) {
+    throw new Error("invalid_history_hours");
+  }
+
+  const hours = Number(value);
+
+  if (!ALLOWED_HISTORY_HOURS.has(hours)) {
+    throw new Error("invalid_history_hours");
+  }
+
+  return hours;
+}
+
+function toNullableNumber(value) {
+  if (value === null) {
+    return null;
+  }
+
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function serializeHistoryRow(row) {
+  const collectedAt = new Date(row.collectedAt);
+
+  return {
+    collectedAt: collectedAt.toISOString(),
+    apiReachable: row.apiReachable === true,
+    systemUptimeSeconds: toNullableNumber(row.systemUptimeSeconds),
+    memory: {
+      totalMb: toNullableNumber(row.memoryTotalMb),
+      availableMb: toNullableNumber(row.memoryAvailableMb),
+      usedMb: toNullableNumber(row.memoryUsedMb),
+      usedPercent: toNullableNumber(row.memoryUsedPercent)
+    },
+    loadAverage: {
+      one: toNullableNumber(row.loadOne),
+      five: toNullableNumber(row.loadFive),
+      fifteen: toNullableNumber(row.loadFifteen)
+    },
+    runtime: {
+      uptimeSeconds: toNullableNumber(row.processUptimeSeconds),
+      rssMb: toNullableNumber(row.processRssMb),
+      heapUsedMb: toNullableNumber(row.processHeapUsedMb),
+      heapTotalMb: toNullableNumber(row.processHeapTotalMb)
+    }
+  };
+}
+
+function historyErrorResponse(error) {
+  if (error && error.code === "42P01") {
+    return {
+      statusCode: 503,
+      body: {
+        error: "monitoring_history_unavailable",
+        reason: "migration_not_applied"
+      }
+    };
+  }
+
+  return {
+    statusCode: 500,
+    body: { error: "monitoring_history_error" }
+  };
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -158,9 +275,30 @@ function readJsonBody(req) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const serviceMatch = req.url.match(/^\/services\/(\d+)$/);
+  let requestUrl;
+
+  try {
+    requestUrl = new URL(req.url || "/", "http://localhost");
+  } catch {
+    sendJson(res, 400, { error: "invalid_request_url" });
+    return;
+  }
+
+  const pathname = requestUrl.pathname;
+  const serviceMatch = pathname.match(/^\/services\/(\d+)$/);
+
+  if (pathname === "/monitoring/history" && req.method !== "GET") {
+    sendJson(
+      res,
+      405,
+      { error: "method_not_allowed" },
+      { Allow: "GET" }
+    );
+    return;
+  }
+
   const isBlockedWrite =
-    (req.method === "POST" && req.url === "/services") ||
+    (req.method === "POST" && pathname === "/services") ||
     ((req.method === "PUT" || req.method === "DELETE") && serviceMatch);
 
   // Public service mutations are intentionally disabled. This guard must stay
@@ -176,13 +314,13 @@ const server = http.createServer(async (req, res) => {
   }
 
   // HEALTH CHECK
-  if (req.method === "GET" && req.url === "/health") {
+  if (req.method === "GET" && pathname === "/health") {
     sendJson(res, 200, { status: "ok" });
     return;
   }
 
   // SYSTEM METRICS - informações públicas explicitamente selecionadas
-  if (req.method === "GET" && req.url === "/system") {
+  if (req.method === "GET" && pathname === "/system") {
     try {
       sendJson(res, 200, await getSystemSnapshot());
     } catch (error) {
@@ -193,13 +331,51 @@ const server = http.createServer(async (req, res) => {
   }
 
   // NODE RUNTIME - sem ambiente, argumentos, PID ou caminhos internos
-  if (req.method === "GET" && req.url === "/runtime") {
+  if (req.method === "GET" && pathname === "/runtime") {
     sendJson(res, 200, getRuntimeSnapshot());
     return;
   }
 
+  // MONITORING HISTORY - períodos limitados e resposta pública explícita
+  if (req.method === "GET" && pathname === "/monitoring/history") {
+    let hours;
+
+    try {
+      hours = parseHistoryHours(requestUrl.searchParams);
+    } catch {
+      sendJson(res, 400, {
+        error: "invalid_history_period",
+        allowedHours: [...ALLOWED_HISTORY_HOURS]
+      });
+      return;
+    }
+
+    try {
+      const result = await pool.query(
+        HISTORY_SELECT_SQL,
+        [hours, MAX_HISTORY_POINTS]
+      );
+
+      sendJson(res, 200, {
+        hours,
+        maxPoints: MAX_HISTORY_POINTS,
+        points: result.rows.map(serializeHistoryRow)
+      });
+    } catch (error) {
+      const response = historyErrorResponse(error);
+
+      if (response.statusCode === 500) {
+        console.error("Monitoring history query failed.");
+      }
+
+      sendJson(res, response.statusCode, response.body);
+    }
+
+    return;
+  }
+
   // READ - listar serviços
-  if (req.method === "GET" && req.url === "/services") {
+  if (req.method === "GET" && pathname === "/services") {
     try {
       const result = await pool.query(
         "SELECT id, name, status, created_at FROM public.services ORDER BY id;"
@@ -218,7 +394,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   // CREATE - criar serviço
-  if (req.method === "POST" && req.url === "/services") {
+  if (req.method === "POST" && pathname === "/services") {
     try {
       const body = await readJsonBody(req);
 
@@ -342,6 +518,18 @@ const server = http.createServer(async (req, res) => {
   res.end(JSON.stringify({ error: "not_found" }));
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`OpsLab API listening on http://${HOST}:${PORT}`);
-});
+if (require.main === module) {
+  server.listen(PORT, HOST, () => {
+    console.log(`OpsLab API listening on http://${HOST}:${PORT}`);
+  });
+}
+
+module.exports = {
+  ALLOWED_HISTORY_HOURS,
+  DEFAULT_HISTORY_HOURS,
+  HISTORY_SELECT_SQL,
+  MAX_HISTORY_POINTS,
+  historyErrorResponse,
+  parseHistoryHours,
+  serializeHistoryRow
+};
