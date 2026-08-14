@@ -1,0 +1,16 @@
+[Unit]
+Description=Collect OpsLab monitoring snapshot
+Wants=network-online.target
+After=network-online.target opslab-api.service postgresql.service
+
+[Service]
+Type=oneshot
+User=marcos
+WorkingDirectory=/var/www/opslab/app
+EnvironmentFile=/etc/opslab/opslab-api.env
+ExecStart=/home/marcos/.nvm/versions/node/v24.19.0/bin/node /var/www/opslab/app/collect-snapshot.js
+NoNewPrivileges=true
+PrivateTmp=true
+
+# A oneshot unit cannot have overlapping active executions; a new timer
+# activation is coalesced while the previous invocation is still running.

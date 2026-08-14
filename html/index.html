@@ -658,6 +658,159 @@
             color: #fecdd3;
         }
 
+        .auto-refresh-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            margin-top: 15px;
+            color: #64748b;
+            font-size: .75rem;
+        }
+
+        .auto-refresh-state {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: #bbf7d0;
+        }
+
+        .auto-refresh-state::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px rgba(74, 222, 128, .55);
+        }
+
+        .auto-refresh-state[data-state="paused"] {
+            color: #cbd5e1;
+        }
+
+        .auto-refresh-state[data-state="paused"]::before {
+            background: var(--muted);
+            box-shadow: none;
+        }
+
+        .history {
+            padding: 0 0 100px;
+        }
+
+        .history-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 18px;
+        }
+
+        .history-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .history-filter {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 8px 13px;
+            background: rgba(15, 23, 42, .7);
+            color: var(--muted);
+            font: inherit;
+            font-size: .78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .history-filter:hover,
+        .history-filter:focus-visible {
+            border-color: rgba(56, 189, 248, .45);
+            color: #bae6fd;
+        }
+
+        .history-filter:focus-visible {
+            outline: 2px solid var(--blue);
+            outline-offset: 2px;
+        }
+
+        .history-filter[aria-pressed="true"] {
+            border-color: rgba(56, 189, 248, .45);
+            background: rgba(56, 189, 248, .12);
+            color: #bae6fd;
+        }
+
+        .history-state {
+            min-height: 58px;
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            background: rgba(2, 6, 23, .5);
+            color: var(--muted);
+            line-height: 1.5;
+            font-size: .85rem;
+        }
+
+        .history-state[data-state="success"] {
+            border-color: rgba(74, 222, 128, .2);
+            color: #bbf7d0;
+        }
+
+        .history-state[data-state="unavailable"],
+        .history-state[data-state="error"] {
+            border-color: rgba(251, 113, 133, .22);
+            color: #fecdd3;
+        }
+
+        .history-charts {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .history-chart-card {
+            min-width: 0;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            background: rgba(15, 23, 42, .62);
+        }
+
+        .history-chart-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 14px;
+        }
+
+        .history-chart-header h3 {
+            font-size: .9rem;
+        }
+
+        .history-chart-value {
+            color: #cbd5e1;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .history-canvas {
+            display: block;
+            width: 100%;
+            height: 180px;
+        }
+
+        .history-note {
+            margin-top: 12px;
+            color: #64748b;
+            font-size: .75rem;
+            line-height: 1.5;
+        }
+
         footer {
             border-top: 1px solid var(--border);
             padding: 25px 0;
@@ -688,7 +841,8 @@
             }
 
             .live-grid,
-            .services-list {
+            .services-list,
+            .history-charts {
                 grid-template-columns: 1fr;
             }
         }
@@ -711,8 +865,13 @@
             }
 
             .services-header,
-            .service-item {
+            .service-item,
+            .history-toolbar {
                 align-items: flex-start;
+            }
+
+            .history-toolbar {
+                flex-direction: column;
             }
         }
 
@@ -826,7 +985,7 @@
                         <span class="command"> live checks</span>
                     </div>
 
-                    <div class="blue">↓ /api/health · /api/services · /api/system · /api/runtime</div>
+                    <div class="blue">↓ /api/health · /api/services · /api/system · /api/runtime · /api/monitoring/history</div>
 
                     <br>
 
@@ -892,7 +1051,16 @@
                 </article>
             </div>
 
-            <p class="update-meta">Última atualização: <time id="last-updated">aguardando</time></p>
+            <div class="auto-refresh-meta" aria-live="polite">
+                <span class="auto-refresh-state" id="auto-refresh-state" data-state="active">
+                    Atualização automática ativa
+                </span>
+                <span>
+                    Próxima leitura ao vivo em <time id="refresh-countdown">15s</time>
+                    · health/services a cada 60s · histórico a cada 5min
+                </span>
+                <span>Última atualização: <time id="last-updated">aguardando</time></span>
+            </div>
 
             <section class="services-panel" aria-labelledby="services-title">
                 <div class="services-header">
@@ -978,6 +1146,65 @@
 
         </section>
 
+
+        <section class="history" aria-labelledby="history-title">
+            <div class="section-heading">
+                <div>
+                    <div class="section-title">HISTÓRICO DE MONITORAMENTO</div>
+                    <h2 id="history-title">Comportamento ao longo do tempo</h2>
+                    <p class="section-description">
+                        Snapshots reais coletados pelo servidor a cada cinco minutos após a aplicação da migration 002.
+                    </p>
+                </div>
+            </div>
+
+            <div class="history-toolbar">
+                <div class="history-filters" aria-label="Período do histórico">
+                    <button class="history-filter" type="button" data-hours="1" aria-pressed="false">1h</button>
+                    <button class="history-filter" type="button" data-hours="6" aria-pressed="false">6h</button>
+                    <button class="history-filter" type="button" data-hours="24" aria-pressed="true">24h</button>
+                    <button class="history-filter" type="button" data-hours="168" aria-pressed="false">7 dias</button>
+                </div>
+            </div>
+
+            <div class="history-state" id="history-state" data-state="loading" role="status" aria-live="polite">
+                Consultando o histórico real...
+            </div>
+
+            <div class="history-charts" id="history-charts" hidden>
+                <article class="history-chart-card">
+                    <div class="history-chart-header">
+                        <h3>Memória utilizada</h3>
+                        <span class="history-chart-value" id="history-memory-value">—</span>
+                    </div>
+                    <canvas class="history-canvas" id="history-memory-chart" role="img"
+                        aria-label="Histórico do percentual de memória utilizada"></canvas>
+                </article>
+
+                <article class="history-chart-card">
+                    <div class="history-chart-header">
+                        <h3>Load average · 1 min</h3>
+                        <span class="history-chart-value" id="history-load-value">—</span>
+                    </div>
+                    <canvas class="history-canvas" id="history-load-chart" role="img"
+                        aria-label="Histórico do load average de um minuto"></canvas>
+                </article>
+
+                <article class="history-chart-card">
+                    <div class="history-chart-header">
+                        <h3>Memória RSS · Node.js</h3>
+                        <span class="history-chart-value" id="history-rss-value">—</span>
+                    </div>
+                    <canvas class="history-canvas" id="history-rss-chart" role="img"
+                        aria-label="Histórico da memória RSS do processo Node.js"></canvas>
+                </article>
+            </div>
+
+            <p class="history-note">
+                Nenhum dado é simulado. Enquanto a migration não estiver aplicada, esta seção informa a indisponibilidade.
+            </p>
+        </section>
+
     </main>
 
 
@@ -989,6 +1216,12 @@
         "use strict";
 
         const REQUEST_TIMEOUT_MS = 6000;
+        const LIVE_METRICS_INTERVAL_MS = 15000;
+        const CORE_STATUS_INTERVAL_MS = 60000;
+        const HISTORY_INTERVAL_MS = 300000;
+        const COUNTDOWN_INTERVAL_MS = 1000;
+        const ALLOWED_HISTORY_HOURS = new Set([1, 6, 24, 168]);
+
         const elements = {
             globalStatus: document.getElementById("global-api-status"),
             globalLabel: document.getElementById("global-api-label"),
@@ -1017,13 +1250,53 @@
             runtimeNodeVersion: document.getElementById("runtime-node-version"),
             runtimeUptime: document.getElementById("runtime-uptime"),
             runtimeRss: document.getElementById("runtime-rss"),
+            autoRefreshState: document.getElementById("auto-refresh-state"),
+            refreshCountdown: document.getElementById("refresh-countdown"),
             lastUpdated: document.getElementById("last-updated"),
-            refreshButton: document.getElementById("refresh-button")
+            refreshButton: document.getElementById("refresh-button"),
+            historyState: document.getElementById("history-state"),
+            historyCharts: document.getElementById("history-charts"),
+            historyFilters: [...document.querySelectorAll(".history-filter")],
+            historyMemoryChart: document.getElementById("history-memory-chart"),
+            historyLoadChart: document.getElementById("history-load-chart"),
+            historyRssChart: document.getElementById("history-rss-chart"),
+            historyMemoryValue: document.getElementById("history-memory-value"),
+            historyLoadValue: document.getElementById("history-load-value"),
+            historyRssValue: document.getElementById("history-rss-value")
         };
+
+        const inFlight = new Map();
+        const scheduleTimers = {
+            live: null,
+            core: null,
+            history: null
+        };
+        const nextRunAt = {
+            live: null,
+            core: null,
+            history: null
+        };
+        const validData = {
+            services: false,
+            system: false,
+            runtime: false,
+            history: false
+        };
+
+        let currentHistoryHours = 24;
+        let lastHistoryPoints = [];
+        let dashboardRefreshPromise = null;
+        let countdownTimer = null;
+        let resizeTimer = null;
 
         function setCardState(card, badge, state, label) {
             card.dataset.state = state;
             badge.textContent = label;
+        }
+
+        function setHistoryState(state, message) {
+            elements.historyState.dataset.state = state;
+            elements.historyState.textContent = message;
         }
 
         function createMessage(message, state) {
@@ -1036,10 +1309,10 @@
 
         function describeError(error) {
             if (error.name === "AbortError") {
-                return "A consulta excedeu o limite de 6 segundos. Tente atualizar novamente.";
+                return "A consulta excedeu o limite de 6 segundos. Os últimos valores válidos foram preservados.";
             }
 
-            return "Não foi possível concluir a consulta agora. Tente atualizar novamente.";
+            return "Não foi possível concluir a consulta agora. Os últimos valores válidos foram preservados.";
         }
 
         function isFiniteNumber(value) {
@@ -1071,6 +1344,15 @@
             return parts.join(" ");
         }
 
+        function markLastUpdated() {
+            const updatedAt = new Date();
+            elements.lastUpdated.dateTime = updatedAt.toISOString();
+            elements.lastUpdated.textContent = new Intl.DateTimeFormat("pt-BR", {
+                dateStyle: "short",
+                timeStyle: "medium"
+            }).format(updatedAt);
+        }
+
         function setSystemMetrics(message) {
             elements.terminalHostname.textContent = message;
             elements.systemHostname.textContent = message;
@@ -1086,6 +1368,19 @@
             elements.runtimeNodeVersion.textContent = message;
             elements.runtimeUptime.textContent = message;
             elements.runtimeRss.textContent = message;
+        }
+
+        function runExclusive(key, task) {
+            if (inFlight.has(key)) {
+                return inFlight.get(key);
+            }
+
+            const promise = Promise.resolve()
+                .then(task)
+                .finally(() => inFlight.delete(key));
+
+            inFlight.set(key, promise);
+            return promise;
         }
 
         function validateSystemResponse(system) {
@@ -1126,6 +1421,53 @@
             }
         }
 
+        function validateHistoryResponse(history) {
+            if (
+                !history ||
+                !ALLOWED_HISTORY_HOURS.has(history.hours) ||
+                !Number.isInteger(history.maxPoints) ||
+                history.maxPoints < 1 ||
+                !Array.isArray(history.points) ||
+                history.points.length > history.maxPoints
+            ) {
+                throw new Error("unexpected_history_response");
+            }
+
+            history.points.forEach((point) => {
+                if (
+                    !point ||
+                    typeof point.collectedAt !== "string" ||
+                    typeof point.apiReachable !== "boolean" ||
+                    !point.memory ||
+                    !point.loadAverage ||
+                    !point.runtime
+                ) {
+                    throw new Error("unexpected_history_point");
+                }
+
+                if (point.apiReachable) {
+                    const values = [
+                        point.systemUptimeSeconds,
+                        point.memory.totalMb,
+                        point.memory.availableMb,
+                        point.memory.usedMb,
+                        point.memory.usedPercent,
+                        point.loadAverage.one,
+                        point.loadAverage.five,
+                        point.loadAverage.fifteen,
+                        point.runtime.uptimeSeconds,
+                        point.runtime.rssMb,
+                        point.runtime.heapUsedMb,
+                        point.runtime.heapTotalMb
+                    ];
+
+                    if (!values.every(isFiniteNumber)) {
+                        throw new Error("unexpected_history_metrics");
+                    }
+                }
+            });
+        }
+
         async function fetchJson(url) {
             const controller = new AbortController();
             const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -1138,15 +1480,24 @@
                     signal: controller.signal
                 });
 
-                if (!response.ok) {
-                    throw new Error("HTTP " + response.status);
-                }
+                let payload = null;
 
                 try {
-                    return await response.json();
+                    payload = await response.json();
                 } catch {
-                    throw new Error("invalid_json_response");
+                    if (response.ok) {
+                        throw new Error("invalid_json_response");
+                    }
                 }
+
+                if (!response.ok) {
+                    const error = new Error("HTTP " + response.status);
+                    error.status = response.status;
+                    error.payload = payload;
+                    throw error;
+                }
+
+                return payload;
             } finally {
                 window.clearTimeout(timeoutId);
             }
@@ -1155,7 +1506,8 @@
         function renderServices(services) {
             elements.servicesList.replaceChildren();
             elements.servicesList.setAttribute("aria-busy", "false");
-            elements.servicesCount.textContent = services.length + " " + (services.length === 1 ? "registro" : "registros");
+            elements.servicesCount.textContent =
+                services.length + " " + (services.length === 1 ? "registro" : "registros");
 
             if (services.length === 0) {
                 elements.servicesList.appendChild(
@@ -1177,9 +1529,12 @@
                 metadata.className = "service-meta";
                 state.className = "service-state";
 
-                name.textContent = typeof service.name === "string" ? service.name : "Serviço sem nome";
-                metadata.textContent = service.id == null ? "ID indisponível" : "ID " + String(service.id);
-                state.textContent = typeof service.status === "string" ? service.status : "status desconhecido";
+                name.textContent =
+                    typeof service.name === "string" ? service.name : "Serviço sem nome";
+                metadata.textContent =
+                    service.id == null ? "ID indisponível" : "ID " + String(service.id);
+                state.textContent =
+                    typeof service.status === "string" ? service.status : "status desconhecido";
 
                 identity.append(name, metadata);
                 item.append(identity, state);
@@ -1187,137 +1542,507 @@
             });
         }
 
-        async function loadHealth() {
-            setCardState(elements.healthCard, elements.healthBadge, "loading", "Carregando");
-            elements.healthDetail.textContent = "Verificando se a API está acessível...";
-            elements.globalStatus.dataset.state = "loading";
-            elements.globalLabel.textContent = "Verificando API...";
+        function loadHealth() {
+            return runExclusive("health", async () => {
+                setCardState(elements.healthCard, elements.healthBadge, "loading", "Atualizando");
+                elements.healthDetail.textContent = "Verificando se a API está acessível...";
+                elements.globalStatus.dataset.state = "loading";
+                elements.globalLabel.textContent = "Verificando API...";
 
-            try {
-                const health = await fetchJson("/api/health");
+                try {
+                    const health = await fetchJson("/api/health");
 
-                if (!health || health.status !== "ok") {
-                    throw new Error("unexpected_health_response");
+                    if (!health || health.status !== "ok") {
+                        throw new Error("unexpected_health_response");
+                    }
+
+                    setCardState(elements.healthCard, elements.healthBadge, "success", "Acessível");
+                    elements.healthDetail.textContent =
+                        "A API respondeu com sucesso ao health check público.";
+                    elements.globalStatus.dataset.state = "success";
+                    elements.globalLabel.textContent = "API acessível";
+                    markLastUpdated();
+                } catch (error) {
+                    setCardState(elements.healthCard, elements.healthBadge, "error", "Indisponível");
+                    elements.healthDetail.textContent = describeError(error);
+                    elements.globalStatus.dataset.state = "error";
+                    elements.globalLabel.textContent = "API indisponível";
+                    throw error;
+                }
+            });
+        }
+
+        function loadServices() {
+            return runExclusive("services", async () => {
+                setCardState(elements.servicesCard, elements.servicesBadge, "loading", "Atualizando");
+                elements.servicesDetail.textContent = "Consultando os registros persistidos...";
+
+                if (!validData.services) {
+                    elements.servicesCount.textContent = "Consultando...";
+                    elements.servicesList.setAttribute("aria-busy", "true");
+                    elements.servicesList.replaceChildren(
+                        createMessage("Carregando serviços...", "loading")
+                    );
                 }
 
-                setCardState(elements.healthCard, elements.healthBadge, "success", "Acessível");
-                elements.healthDetail.textContent = "A API respondeu com sucesso ao health check público.";
-                elements.globalStatus.dataset.state = "success";
-                elements.globalLabel.textContent = "API acessível";
-            } catch (error) {
-                setCardState(elements.healthCard, elements.healthBadge, "error", "Indisponível");
-                elements.healthDetail.textContent = describeError(error);
-                elements.globalStatus.dataset.state = "error";
-                elements.globalLabel.textContent = "API indisponível";
-                throw error;
-            }
+                try {
+                    const services = await fetchJson("/api/services");
+
+                    if (!Array.isArray(services)) {
+                        throw new Error("unexpected_services_response");
+                    }
+
+                    validData.services = true;
+                    setCardState(elements.servicesCard, elements.servicesBadge, "success", "Consulta OK");
+                    elements.servicesDetail.textContent =
+                        "A API consultou o PostgreSQL e retornou uma lista válida.";
+                    renderServices(services);
+                    markLastUpdated();
+                } catch (error) {
+                    const message = describeError(error);
+                    setCardState(elements.servicesCard, elements.servicesBadge, "error", "Falha na consulta");
+                    elements.servicesDetail.textContent = message;
+
+                    if (!validData.services) {
+                        elements.servicesCount.textContent = "Não disponível";
+                        elements.servicesList.setAttribute("aria-busy", "false");
+                        elements.servicesList.replaceChildren(createMessage(message, "error"));
+                    }
+
+                    throw error;
+                }
+            });
         }
 
-        async function loadServices() {
-            setCardState(elements.servicesCard, elements.servicesBadge, "loading", "Carregando");
-            elements.servicesDetail.textContent = "Consultando os registros persistidos...";
-            elements.servicesCount.textContent = "Consultando...";
-            elements.servicesList.setAttribute("aria-busy", "true");
-            elements.servicesList.replaceChildren(createMessage("Carregando serviços...", "loading"));
+        function loadSystem() {
+            return runExclusive("system", async () => {
+                setCardState(elements.systemCard, elements.systemBadge, "loading", "Atualizando");
+                elements.systemDetail.textContent = "Coletando métricas do host...";
 
-            try {
-                const services = await fetchJson("/api/services");
-
-                if (!Array.isArray(services)) {
-                    throw new Error("unexpected_services_response");
+                if (!validData.system) {
+                    setSystemMetrics("Carregando...");
                 }
 
-                setCardState(elements.servicesCard, elements.servicesBadge, "success", "Consulta OK");
-                elements.servicesDetail.textContent = "A API consultou o PostgreSQL e retornou uma lista válida.";
-                renderServices(services);
-            } catch (error) {
-                const message = describeError(error);
-                setCardState(elements.servicesCard, elements.servicesBadge, "error", "Falha na consulta");
-                elements.servicesDetail.textContent = message;
-                elements.servicesCount.textContent = "Não disponível";
-                elements.servicesList.setAttribute("aria-busy", "false");
-                elements.servicesList.replaceChildren(createMessage(message, "error"));
-                throw error;
-            }
+                try {
+                    const system = await fetchJson("/api/system");
+                    validateSystemResponse(system);
+
+                    validData.system = true;
+                    setCardState(elements.systemCard, elements.systemBadge, "success", "Coleta OK");
+                    elements.systemDetail.textContent =
+                        "Métricas públicas do sistema operacional atualizadas.";
+                    elements.terminalHostname.textContent = system.hostname;
+                    elements.systemHostname.textContent = system.hostname;
+                    elements.systemOs.textContent = system.os;
+                    elements.systemKernel.textContent = system.kernel;
+                    elements.systemUptime.textContent = formatDuration(system.uptimeSeconds);
+                    elements.systemMemory.textContent =
+                        formatNumber(system.memory.usedMb) + " MB / " +
+                        formatNumber(system.memory.totalMb) + " MB";
+                    elements.systemMemoryPercent.textContent =
+                        formatNumber(system.memory.usedPercent) + "%";
+                    elements.systemLoad.textContent =
+                        formatNumber(system.loadAverage.one, 2);
+                    markLastUpdated();
+                } catch (error) {
+                    setCardState(elements.systemCard, elements.systemBadge, "error", "Indisponível");
+                    elements.systemDetail.textContent = describeError(error);
+
+                    if (!validData.system) {
+                        setSystemMetrics("Indisponível");
+                    }
+
+                    throw error;
+                }
+            });
         }
 
-        async function loadSystem() {
-            setCardState(elements.systemCard, elements.systemBadge, "loading", "Carregando");
-            elements.systemDetail.textContent = "Coletando métricas do host...";
-            setSystemMetrics("Carregando...");
+        function loadRuntime() {
+            return runExclusive("runtime", async () => {
+                setCardState(elements.runtimeCard, elements.runtimeBadge, "loading", "Atualizando");
+                elements.runtimeDetail.textContent = "Consultando o processo da API...";
 
-            try {
-                const system = await fetchJson("/api/system");
-                validateSystemResponse(system);
+                if (!validData.runtime) {
+                    setRuntimeMetrics("Carregando...");
+                }
 
-                setCardState(elements.systemCard, elements.systemBadge, "success", "Coleta OK");
-                elements.systemDetail.textContent = "Métricas públicas do sistema operacional atualizadas.";
-                elements.terminalHostname.textContent = system.hostname;
-                elements.systemHostname.textContent = system.hostname;
-                elements.systemOs.textContent = system.os;
-                elements.systemKernel.textContent = system.kernel;
-                elements.systemUptime.textContent = formatDuration(system.uptimeSeconds);
-                elements.systemMemory.textContent =
-                    formatNumber(system.memory.usedMb) + " MB / " +
-                    formatNumber(system.memory.totalMb) + " MB";
-                elements.systemMemoryPercent.textContent =
-                    formatNumber(system.memory.usedPercent) + "%";
-                elements.systemLoad.textContent =
-                    formatNumber(system.loadAverage.one, 2);
-            } catch (error) {
-                setCardState(elements.systemCard, elements.systemBadge, "error", "Indisponível");
-                elements.systemDetail.textContent = describeError(error);
-                setSystemMetrics("Indisponível");
-                throw error;
-            }
+                try {
+                    const runtime = await fetchJson("/api/runtime");
+                    validateRuntimeResponse(runtime);
+
+                    validData.runtime = true;
+                    setCardState(elements.runtimeCard, elements.runtimeBadge, "success", "Online");
+                    elements.runtimeDetail.textContent =
+                        "Runtime Node.js da API respondendo normalmente.";
+                    elements.runtimeNodeVersion.textContent = runtime.nodeVersion;
+                    elements.runtimeUptime.textContent = formatDuration(runtime.uptimeSeconds);
+                    elements.runtimeRss.textContent =
+                        formatNumber(runtime.memory.rssMb) + " MB";
+                    markLastUpdated();
+                } catch (error) {
+                    setCardState(elements.runtimeCard, elements.runtimeBadge, "error", "Indisponível");
+                    elements.runtimeDetail.textContent = describeError(error);
+
+                    if (!validData.runtime) {
+                        setRuntimeMetrics("Indisponível");
+                    }
+
+                    throw error;
+                }
+            });
         }
 
-        async function loadRuntime() {
-            setCardState(elements.runtimeCard, elements.runtimeBadge, "loading", "Carregando");
-            elements.runtimeDetail.textContent = "Consultando o processo da API...";
-            setRuntimeMetrics("Carregando...");
+        function prepareCanvas(canvas) {
+            const width = Math.max(Math.floor(canvas.getBoundingClientRect().width), 260);
+            const height = 180;
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
 
-            try {
-                const runtime = await fetchJson("/api/runtime");
-                validateRuntimeResponse(runtime);
+            canvas.width = Math.floor(width * ratio);
+            canvas.height = Math.floor(height * ratio);
 
-                setCardState(elements.runtimeCard, elements.runtimeBadge, "success", "Online");
-                elements.runtimeDetail.textContent = "Runtime Node.js da API respondendo normalmente.";
-                elements.runtimeNodeVersion.textContent = runtime.nodeVersion;
-                elements.runtimeUptime.textContent = formatDuration(runtime.uptimeSeconds);
-                elements.runtimeRss.textContent =
-                    formatNumber(runtime.memory.rssMb) + " MB";
-            } catch (error) {
-                setCardState(elements.runtimeCard, elements.runtimeBadge, "error", "Indisponível");
-                elements.runtimeDetail.textContent = describeError(error);
-                setRuntimeMetrics("Indisponível");
-                throw error;
+            const context = canvas.getContext("2d");
+            context.setTransform(ratio, 0, 0, ratio, 0, 0);
+            context.clearRect(0, 0, width, height);
+
+            return { context, width, height };
+        }
+
+        function drawLineChart(canvas, points, valueAccessor, options) {
+            const prepared = prepareCanvas(canvas);
+            const context = prepared.context;
+            const width = prepared.width;
+            const height = prepared.height;
+            const plot = {
+                left: 34,
+                top: 12,
+                right: width - 12,
+                bottom: height - 28
+            };
+            const values = points.map(valueAccessor);
+            const maximumValue = options.maximum == null
+                ? Math.max(...values, 1) * 1.1
+                : options.maximum;
+            const minimumValue = options.minimum == null
+                ? Math.min(...values, 0)
+                : options.minimum;
+            const range = Math.max(maximumValue - minimumValue, 1);
+
+            context.lineWidth = 1;
+            context.strokeStyle = "rgba(148, 163, 184, .14)";
+            context.fillStyle = "#64748b";
+            context.font = "10px Inter, Arial, sans-serif";
+
+            for (let line = 0; line <= 3; line += 1) {
+                const y = plot.top + ((plot.bottom - plot.top) * line / 3);
+                context.beginPath();
+                context.moveTo(plot.left, y);
+                context.lineTo(plot.right, y);
+                context.stroke();
+
+                const labelValue = maximumValue - (range * line / 3);
+                context.fillText(
+                    formatNumber(labelValue, options.decimals),
+                    2,
+                    y + 3
+                );
             }
+
+            context.strokeStyle = options.color;
+            context.lineWidth = 2;
+            context.lineJoin = "round";
+            context.lineCap = "round";
+            context.beginPath();
+
+            values.forEach((value, index) => {
+                const x = values.length === 1
+                    ? plot.right
+                    : plot.left + ((plot.right - plot.left) * index / (values.length - 1));
+                const y = plot.bottom -
+                    ((value - minimumValue) / range) * (plot.bottom - plot.top);
+
+                if (index === 0) {
+                    context.moveTo(x, y);
+                } else {
+                    context.lineTo(x, y);
+                }
+            });
+
+            context.stroke();
+
+            const firstTime = new Date(points[0].collectedAt);
+            const lastTime = new Date(points[points.length - 1].collectedAt);
+            const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+
+            context.fillStyle = "#64748b";
+            context.textAlign = "left";
+            context.fillText(timeFormatter.format(firstTime), plot.left, height - 8);
+            context.textAlign = "right";
+            context.fillText(timeFormatter.format(lastTime), plot.right, height - 8);
+            context.textAlign = "left";
+        }
+
+        function clearHistoryValues() {
+            elements.historyCharts.hidden = true;
+            elements.historyMemoryValue.textContent = "—";
+            elements.historyLoadValue.textContent = "—";
+            elements.historyRssValue.textContent = "—";
+        }
+
+        function renderHistory(points) {
+            const usablePoints = points.filter((point) =>
+                point.apiReachable &&
+                isFiniteNumber(point.memory.usedPercent) &&
+                isFiniteNumber(point.loadAverage.one) &&
+                isFiniteNumber(point.runtime.rssMb)
+            );
+
+            lastHistoryPoints = usablePoints;
+
+            if (usablePoints.length === 0) {
+                clearHistoryValues();
+                return false;
+            }
+
+            elements.historyCharts.hidden = false;
+            const latest = usablePoints[usablePoints.length - 1];
+
+            elements.historyMemoryValue.textContent =
+                formatNumber(latest.memory.usedPercent) + "%";
+            elements.historyLoadValue.textContent =
+                formatNumber(latest.loadAverage.one, 2);
+            elements.historyRssValue.textContent =
+                formatNumber(latest.runtime.rssMb) + " MB";
+
+            drawLineChart(
+                elements.historyMemoryChart,
+                usablePoints,
+                (point) => point.memory.usedPercent,
+                { minimum: 0, maximum: 100, decimals: 0, color: "#38bdf8" }
+            );
+            drawLineChart(
+                elements.historyLoadChart,
+                usablePoints,
+                (point) => point.loadAverage.one,
+                { minimum: 0, maximum: null, decimals: 2, color: "#a78bfa" }
+            );
+            drawLineChart(
+                elements.historyRssChart,
+                usablePoints,
+                (point) => point.runtime.rssMb,
+                { minimum: 0, maximum: null, decimals: 0, color: "#4ade80" }
+            );
+
+            return true;
+        }
+
+        function loadHistory() {
+            return runExclusive("history", async () => {
+                if (!validData.history) {
+                    setHistoryState("loading", "Consultando o histórico real...");
+                    clearHistoryValues();
+                } else {
+                    setHistoryState("loading", "Atualizando o histórico...");
+                }
+
+                try {
+                    const history = await fetchJson(
+                        "/api/monitoring/history?hours=" + String(currentHistoryHours)
+                    );
+                    validateHistoryResponse(history);
+                    validData.history = true;
+
+                    if (renderHistory(history.points)) {
+                        setHistoryState(
+                            "success",
+                            String(history.points.length) +
+                                " snapshots no período selecionado."
+                        );
+                    } else if (history.points.length === 0) {
+                        setHistoryState(
+                            "empty",
+                            "A consulta funcionou, mas ainda não existem snapshots neste período."
+                        );
+                    } else {
+                        setHistoryState(
+                            "empty",
+                            "Existem snapshots, mas nenhum contém métricas completas para os gráficos."
+                        );
+                    }
+
+                    markLastUpdated();
+                } catch (error) {
+                    const migrationMissing =
+                        error.status === 503 &&
+                        error.payload &&
+                        error.payload.reason === "migration_not_applied";
+
+                    if (migrationMissing) {
+                        setHistoryState(
+                            "unavailable",
+                            "Histórico indisponível: a migration 002 ainda não foi aplicada."
+                        );
+                    } else {
+                        setHistoryState(
+                            "error",
+                            validData.history
+                                ? "Falha ao atualizar. Os últimos dados históricos válidos foram preservados."
+                                : "Não foi possível consultar o histórico agora."
+                        );
+                    }
+
+                    if (!validData.history) {
+                        clearHistoryValues();
+                    }
+
+                    throw error;
+                }
+            });
+        }
+
+        function clearSchedule(name) {
+            if (scheduleTimers[name] !== null) {
+                window.clearTimeout(scheduleTimers[name]);
+                scheduleTimers[name] = null;
+            }
+
+            nextRunAt[name] = null;
+        }
+
+        function schedule(name, interval, task) {
+            clearSchedule(name);
+
+            if (document.hidden) {
+                return;
+            }
+
+            nextRunAt[name] = Date.now() + interval;
+            scheduleTimers[name] = window.setTimeout(async () => {
+                scheduleTimers[name] = null;
+
+                if (!document.hidden) {
+                    await Promise.allSettled([task()]);
+                    schedule(name, interval, task);
+                }
+            }, interval);
+        }
+
+        function startAutomaticUpdates() {
+            elements.autoRefreshState.dataset.state = "active";
+            elements.autoRefreshState.textContent = "Atualização automática ativa";
+
+            schedule(
+                "live",
+                LIVE_METRICS_INTERVAL_MS,
+                () => Promise.allSettled([loadSystem(), loadRuntime()])
+            );
+            schedule(
+                "core",
+                CORE_STATUS_INTERVAL_MS,
+                () => Promise.allSettled([loadHealth(), loadServices()])
+            );
+            schedule("history", HISTORY_INTERVAL_MS, loadHistory);
+            updateCountdown();
+        }
+
+        function pauseAutomaticUpdates() {
+            Object.keys(scheduleTimers).forEach(clearSchedule);
+            elements.autoRefreshState.dataset.state = "paused";
+            elements.autoRefreshState.textContent = "Atualização automática pausada";
+            elements.refreshCountdown.textContent = "pausada";
+        }
+
+        function updateCountdown() {
+            if (document.hidden || nextRunAt.live === null) {
+                elements.refreshCountdown.textContent = "pausada";
+                return;
+            }
+
+            const seconds = Math.max(
+                0,
+                Math.ceil((nextRunAt.live - Date.now()) / 1000)
+            );
+            elements.refreshCountdown.textContent = String(seconds) + "s";
         }
 
         async function refreshDashboard() {
+            if (dashboardRefreshPromise) {
+                return dashboardRefreshPromise;
+            }
+
             elements.refreshButton.disabled = true;
             elements.refreshButton.textContent = "Atualizando...";
 
-            await Promise.allSettled([
+            dashboardRefreshPromise = Promise.allSettled([
                 loadHealth(),
                 loadServices(),
                 loadSystem(),
-                loadRuntime()
-            ]);
+                loadRuntime(),
+                loadHistory()
+            ]).finally(() => {
+                dashboardRefreshPromise = null;
+                elements.refreshButton.disabled = false;
+                elements.refreshButton.textContent = "Atualizar dados";
+            });
 
-            const updatedAt = new Date();
-            elements.lastUpdated.dateTime = updatedAt.toISOString();
-            elements.lastUpdated.textContent = new Intl.DateTimeFormat("pt-BR", {
-                dateStyle: "short",
-                timeStyle: "medium"
-            }).format(updatedAt);
-            elements.refreshButton.disabled = false;
-            elements.refreshButton.textContent = "Atualizar dados";
+            return dashboardRefreshPromise;
         }
 
         elements.refreshButton.addEventListener("click", refreshDashboard);
-        refreshDashboard();
+
+        elements.historyFilters.forEach((button) => {
+            button.addEventListener("click", () => {
+                const hours = Number(button.dataset.hours);
+
+                if (!ALLOWED_HISTORY_HOURS.has(hours) || hours === currentHistoryHours) {
+                    return;
+                }
+
+                currentHistoryHours = hours;
+                elements.historyFilters.forEach((filter) => {
+                    filter.setAttribute(
+                        "aria-pressed",
+                        String(filter === button)
+                    );
+                });
+                Promise.allSettled([loadHistory()]);
+
+                if (!document.hidden) {
+                    schedule("history", HISTORY_INTERVAL_MS, loadHistory);
+                }
+            });
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                pauseAutomaticUpdates();
+            } else {
+                refreshDashboard();
+                startAutomaticUpdates();
+            }
+        });
+
+        window.addEventListener("resize", () => {
+            window.clearTimeout(resizeTimer);
+            resizeTimer = window.setTimeout(() => {
+                if (lastHistoryPoints.length > 0) {
+                    renderHistory(lastHistoryPoints);
+                }
+            }, 150);
+        });
+
+        countdownTimer = window.setInterval(updateCountdown, COUNTDOWN_INTERVAL_MS);
+
+        refreshDashboard().finally(() => {
+            if (document.hidden) {
+                pauseAutomaticUpdates();
+            } else {
+                startAutomaticUpdates();
+            }
+        });
     </script>
 
 </body>
