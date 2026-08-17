@@ -440,6 +440,418 @@
             color: #c4b5fd;
         }
 
+
+        /* INFRAESTRUTURA · REDESIGN */
+
+        .infra-redesign {
+            padding: 40px 0 100px;
+        }
+
+        .infra-redesign .infra-redesign-eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            color: #78a7e8;
+            font-size: .68rem;
+            letter-spacing: .19em;
+            text-transform: uppercase;
+        }
+
+        .infra-redesign .infra-redesign-eyebrow::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 16px rgba(74, 222, 128, .8);
+        }
+
+        .infra-redesign-heading {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .infra-redesign-heading h2 {
+            margin: 0;
+            font-size: clamp(1.8rem, 4vw, 2.35rem);
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+        }
+
+        .infra-redesign-subtitle {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: .82rem;
+        }
+
+        .infra-redesign-refresh {
+            color: #64748b;
+            font-size: .72rem;
+            white-space: nowrap;
+        }
+
+        .infra-redesign-refresh strong {
+            color: #93a6ca;
+            font-weight: 500;
+        }
+
+        .infra-status-panel {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            padding: 20px 22px;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            background: linear-gradient(
+                135deg,
+                rgba(15, 23, 42, .78),
+                rgba(8, 14, 28, .84)
+            );
+            box-shadow: 0 16px 50px rgba(0, 0, 0, .16);
+            transition: border-color .25s ease, background .25s ease;
+        }
+
+        .infra-status-panel::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -30%;
+            width: 24%;
+            height: 1px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                var(--green),
+                transparent
+            );
+            opacity: .7;
+            animation: infraScan 5s linear infinite;
+        }
+
+        .infra-status-panel[data-state="error"] {
+            border-color: rgba(251, 113, 133, .28);
+        }
+
+        .infra-status-panel[data-state="error"]::after {
+            background: linear-gradient(
+                90deg,
+                transparent,
+                var(--red),
+                transparent
+            );
+        }
+
+        @keyframes infraScan {
+            to {
+                left: 110%;
+            }
+        }
+
+        .infra-status-main {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .infra-live-orb {
+            flex: 0 0 auto;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: var(--muted);
+            box-shadow: 0 0 0 0 rgba(148, 163, 184, .22);
+            animation: infraPulse 2.4s infinite;
+            transition: background .2s ease;
+        }
+
+        .infra-status-panel[data-state="success"] .infra-live-orb {
+            background: var(--green);
+        }
+
+        .infra-status-panel[data-state="error"] .infra-live-orb {
+            background: var(--red);
+            animation: none;
+        }
+
+        @keyframes infraPulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(74, 222, 128, .28);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);
+            }
+        }
+
+        .infra-status-title {
+            font-size: .88rem;
+            font-weight: 700;
+        }
+
+        .infra-status-copy {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: .75rem;
+            line-height: 1.45;
+        }
+
+        .infra-checks {
+            display: flex;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .infra-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 10px;
+            border: 1px solid rgba(148, 163, 184, .16);
+            border-radius: 999px;
+            background: rgba(148, 163, 184, .04);
+            color: #cbd5e1;
+            font-size: .68rem;
+            white-space: nowrap;
+            transition: border-color .2s ease, color .2s ease, background .2s ease;
+        }
+
+        .infra-chip::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+
+        .infra-chip[data-state="success"] {
+            border-color: rgba(74, 222, 128, .18);
+            background: rgba(74, 222, 128, .035);
+            color: #bbf7d0;
+        }
+
+        .infra-chip[data-state="success"]::before {
+            background: var(--green);
+        }
+
+        .infra-chip[data-state="error"] {
+            border-color: rgba(251, 113, 133, .2);
+            background: rgba(251, 113, 133, .045);
+            color: #fecdd3;
+        }
+
+        .infra-chip[data-state="error"]::before {
+            background: var(--red);
+        }
+
+        .infra-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .infra-metric {
+            position: relative;
+            min-width: 0;
+            min-height: 138px;
+            overflow: hidden;
+            padding: 17px 18px 15px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(15, 23, 42, .72);
+            backdrop-filter: blur(10px);
+            transition:
+                transform .28s ease,
+                border-color .28s ease,
+                background .28s ease;
+        }
+
+        .infra-metric:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, .35);
+        }
+
+        .infra-metric.is-refreshing {
+            border-color: rgba(56, 189, 248, .55);
+            background: rgba(15, 24, 44, .92);
+        }
+
+        .infra-metric.is-refreshing::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                100deg,
+                transparent 25%,
+                rgba(56, 189, 248, .065) 48%,
+                transparent 70%
+            );
+            transform: translateX(-100%);
+            animation: infraSweep .8s ease;
+            pointer-events: none;
+        }
+
+        @keyframes infraSweep {
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        .infra-metric-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 23px;
+        }
+
+        .infra-metric-label {
+            color: #71829f;
+            font-size: .64rem;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+
+        .infra-metric-symbol {
+            color: #5976a5;
+            font-size: .75rem;
+        }
+
+        .infra-metric-value {
+            color: var(--text);
+            font-size: clamp(1.45rem, 2.6vw, 1.72rem);
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: -.045em;
+            overflow-wrap: anywhere;
+        }
+
+        .infra-metric-unit {
+            margin-left: 4px;
+            color: #8291ad;
+            font-size: .75rem;
+            font-weight: 500;
+        }
+
+        .infra-metric-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 16px;
+            color: #64738e;
+            font-size: .65rem;
+        }
+
+        .infra-metric-ok {
+            flex: 0 0 auto;
+            color: var(--green);
+        }
+
+        .infra-mini-track {
+            flex: 0 0 auto;
+            width: 58px;
+            height: 3px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #182237;
+        }
+
+        .infra-mini-track span {
+            display: block;
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--blue), var(--purple));
+            transition: width .5s ease;
+        }
+
+        .infra-components {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(2, 6, 23, .46);
+        }
+
+        .infra-component {
+            min-width: 0;
+            min-height: 84px;
+            padding: 15px 16px;
+            border-right: 1px solid var(--border);
+        }
+
+        .infra-component:last-child {
+            border-right: 0;
+        }
+
+        .infra-component-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .infra-component-name {
+            font-size: .76rem;
+            font-weight: 700;
+        }
+
+        .infra-component-state {
+            flex: 0 0 auto;
+            color: var(--muted);
+            font-size: .58rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .infra-component-state[data-state="success"] {
+            color: var(--green);
+        }
+
+        .infra-component-state[data-state="error"] {
+            color: var(--red);
+        }
+
+        .infra-component-copy {
+            margin-top: 8px;
+            color: #697993;
+            font-size: .64rem;
+            line-height: 1.45;
+        }
+
+        .infra-environment {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 9px;
+            margin-top: 13px;
+            padding: 11px 2px 0;
+            color: #5f708d;
+            font-size: .65rem;
+        }
+
+        .infra-environment strong {
+            color: #8295b7;
+            font-weight: 500;
+        }
+
+        .infra-environment-dot {
+            color: #32405a;
+        }
+
         /* LIVE STATUS */
 
         .live-status {
@@ -875,6 +1287,62 @@
             }
         }
 
+
+        @media (max-width: 900px) {
+            .infra-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .infra-components {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .infra-component:nth-child(2) {
+                border-right: 0;
+            }
+
+            .infra-component:nth-child(-n+2) {
+                border-bottom: 1px solid var(--border);
+            }
+        }
+
+        @media (max-width: 620px) {
+            .infra-redesign-heading {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .infra-status-panel {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .infra-checks {
+                justify-content: flex-start;
+            }
+
+            .infra-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .infra-components {
+                grid-template-columns: 1fr;
+            }
+
+            .infra-component {
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .infra-component:nth-child(-n+2) {
+                border-bottom: 1px solid var(--border);
+            }
+
+            .infra-component:last-child {
+                border-bottom: 0;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             *,
             *::before,
@@ -1061,88 +1529,150 @@
                 <span>Última atualização: <time id="last-updated">aguardando</time></span>
             </div>
 
-            <section class="services-panel" aria-labelledby="services-title">
-                <div class="services-header">
-                    <h3 id="services-title">Serviços registrados</h3>
-                    <span class="services-count" id="services-count">Consultando...</span>
-                </div>
-                <div class="services-list" id="services-list" aria-live="polite" aria-busy="true">
-                    <p class="services-message">Carregando serviços...</p>
-                </div>
-            </section>
+
         </section>
 
 
-        <section class="infra">
+        <section class="infra infra-redesign" aria-labelledby="infra-redesign-title">
+            <div class="infra-redesign-eyebrow">Infraestrutura · live</div>
 
-            <div class="section-title">
-                INFRAESTRUTURA CONFIGURADA
+            <div class="infra-redesign-heading">
+                <div>
+                    <h2 id="infra-redesign-title">Infraestrutura em operação</h2>
+                    <p class="infra-redesign-subtitle">
+                        Saúde da VPS e dos componentes essenciais do OpsLab.
+                    </p>
+                </div>
+
+                <div class="infra-redesign-refresh">
+                    Atualização automática · <strong>dados reais</strong>
+                </div>
             </div>
 
-            <div class="cards">
-
-                <div class="card">
-                    <div class="card-label">Servidor</div>
-                    <div class="card-value" id="system-hostname">Carregando...</div>
+            <div class="infra-status-panel" id="infra-status-panel" data-state="loading" role="status" aria-live="polite">
+                <div class="infra-status-main">
+                    <div class="infra-live-orb"></div>
+                    <div>
+                        <div class="infra-status-title" id="infra-status-title">Verificando ambiente</div>
+                        <div class="infra-status-copy" id="infra-status-copy">
+                            Consultando os endpoints públicos do laboratório...
+                        </div>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-label">Sistema operacional</div>
-                    <div class="card-value" id="system-os">Carregando...</div>
+                <div class="infra-checks" aria-label="Estado dos componentes principais">
+                    <span class="infra-chip" id="infra-api-chip" data-state="loading">API verificando</span>
+                    <span class="infra-chip" id="infra-nginx-chip" data-state="loading">Nginx verificando</span>
+                    <span class="infra-chip" id="infra-postgres-chip" data-state="loading">PostgreSQL verificando</span>
+                    <span class="infra-chip" data-state="success">UFW ativo</span>
                 </div>
-
-                <div class="card">
-                    <div class="card-label">Kernel</div>
-                    <div class="card-value" id="system-kernel">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Uptime da VPS</div>
-                    <div class="card-value" id="system-uptime">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Memória usada / total</div>
-                    <div class="card-value" id="system-memory">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Memória utilizada</div>
-                    <div class="card-value" id="system-memory-percent">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Load average · 1 min</div>
-                    <div class="card-value" id="system-load">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Versão do Node.js</div>
-                    <div class="card-value" id="runtime-node-version">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Uptime do processo</div>
-                    <div class="card-value" id="runtime-uptime">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Memória RSS</div>
-                    <div class="card-value" id="runtime-rss">Carregando...</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Web Server</div>
-                    <div class="card-value configured">Nginx · Configured</div>
-                </div>
-
-                <div class="card">
-                    <div class="card-label">Firewall</div>
-                    <div class="card-value configured">UFW · Configured</div>
-                </div>
-
             </div>
 
+            <div class="infra-metrics">
+                <article class="infra-metric" id="infra-uptime-card">
+                    <div class="infra-metric-head">
+                        <span class="infra-metric-label">Uptime VPS</span>
+                        <span class="infra-metric-symbol">↗</span>
+                    </div>
+                    <div class="infra-metric-value" id="infra-system-uptime">Carregando...</div>
+                    <div class="infra-metric-foot">
+                        <span>Servidor</span>
+                        <span class="infra-metric-ok">● estável</span>
+                    </div>
+                </article>
+
+                <article class="infra-metric" id="infra-memory-card">
+                    <div class="infra-metric-head">
+                        <span class="infra-metric-label">Memória</span>
+                        <span class="infra-metric-symbol">◫</span>
+                    </div>
+                    <div>
+                        <span class="infra-metric-value" id="infra-memory-percent">Carregando...</span>
+                    </div>
+                    <div class="infra-metric-foot">
+                        <span id="infra-memory-detail">Carregando...</span>
+                        <div class="infra-mini-track" aria-hidden="true">
+                            <span id="infra-memory-bar"></span>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="infra-metric" id="infra-load-card">
+                    <div class="infra-metric-head">
+                        <span class="infra-metric-label">Load · 1 min</span>
+                        <span class="infra-metric-symbol">⌁</span>
+                    </div>
+                    <div class="infra-metric-value" id="infra-system-load">Carregando...</div>
+                    <div class="infra-metric-foot">
+                        <span>1 vCPU</span>
+                        <span class="infra-metric-ok">● baixo</span>
+                    </div>
+                </article>
+
+                <article class="infra-metric" id="infra-runtime-card">
+                    <div class="infra-metric-head">
+                        <span class="infra-metric-label">Processo Node.js</span>
+                        <span class="infra-metric-symbol">◆</span>
+                    </div>
+                    <div class="infra-metric-value" id="infra-runtime-uptime">Carregando...</div>
+                    <div class="infra-metric-foot">
+                        <span id="infra-runtime-rss">RSS carregando...</span>
+                        <span class="infra-metric-ok">● online</span>
+                    </div>
+                </article>
+            </div>
+
+            <div class="infra-components">
+                <div class="infra-component">
+                    <div class="infra-component-top">
+                        <span class="infra-component-name">Nginx</span>
+                        <span class="infra-component-state" id="infra-nginx-state" data-state="loading">verificando</span>
+                    </div>
+                    <div class="infra-component-copy">
+                        Web server e reverse proxy da API pública.
+                    </div>
+                </div>
+
+                <div class="infra-component">
+                    <div class="infra-component-top">
+                        <span class="infra-component-name">Node.js API</span>
+                        <span class="infra-component-state" id="infra-node-state" data-state="loading">verificando</span>
+                    </div>
+                    <div class="infra-component-copy">
+                        Runtime <span id="infra-node-component-version">consultando</span> · serviço gerenciado pelo systemd.
+                    </div>
+                </div>
+
+                <div class="infra-component">
+                    <div class="infra-component-top">
+                        <span class="infra-component-name">PostgreSQL</span>
+                        <span class="infra-component-state" id="infra-postgres-state" data-state="loading">verificando</span>
+                    </div>
+                    <div class="infra-component-copy">
+                        Banco local protegido e acessível apenas internamente.
+                    </div>
+                </div>
+
+                <div class="infra-component">
+                    <div class="infra-component-top">
+                        <span class="infra-component-name">UFW Firewall</span>
+                        <span class="infra-component-state" data-state="success">ativo</span>
+                    </div>
+                    <div class="infra-component-copy">
+                        Política de entrada restrita aos serviços publicados.
+                    </div>
+                </div>
+            </div>
+
+            <div class="infra-environment" aria-label="Ambiente do servidor">
+                <strong id="infra-hostname">Carregando...</strong>
+                <span class="infra-environment-dot">•</span>
+                <span id="infra-os">Carregando...</span>
+                <span class="infra-environment-dot">•</span>
+                <span>Kernel <span id="infra-kernel">Carregando...</span></span>
+                <span class="infra-environment-dot">•</span>
+                <span>Node.js <span id="infra-node-version">Carregando...</span></span>
+            </div>
         </section>
 
 
@@ -1224,25 +1754,38 @@
             servicesCard: document.getElementById("services-card"),
             servicesBadge: document.getElementById("services-badge"),
             servicesDetail: document.getElementById("services-detail"),
-            servicesList: document.getElementById("services-list"),
-            servicesCount: document.getElementById("services-count"),
-            systemCard: document.getElementById("system-card"),
+                        systemCard: document.getElementById("system-card"),
             systemBadge: document.getElementById("system-badge"),
             systemDetail: document.getElementById("system-detail"),
             runtimeCard: document.getElementById("runtime-card"),
             runtimeBadge: document.getElementById("runtime-badge"),
             runtimeDetail: document.getElementById("runtime-detail"),
             terminalHostname: document.getElementById("terminal-hostname"),
-            systemHostname: document.getElementById("system-hostname"),
-            systemOs: document.getElementById("system-os"),
-            systemKernel: document.getElementById("system-kernel"),
-            systemUptime: document.getElementById("system-uptime"),
-            systemMemory: document.getElementById("system-memory"),
-            systemMemoryPercent: document.getElementById("system-memory-percent"),
-            systemLoad: document.getElementById("system-load"),
-            runtimeNodeVersion: document.getElementById("runtime-node-version"),
-            runtimeUptime: document.getElementById("runtime-uptime"),
-            runtimeRss: document.getElementById("runtime-rss"),
+            systemHostname: document.getElementById("infra-hostname"),
+            systemOs: document.getElementById("infra-os"),
+            systemKernel: document.getElementById("infra-kernel"),
+            systemUptime: document.getElementById("infra-system-uptime"),
+            systemMemory: document.getElementById("infra-memory-detail"),
+            systemMemoryPercent: document.getElementById("infra-memory-percent"),
+            systemLoad: document.getElementById("infra-system-load"),
+            runtimeNodeVersion: document.getElementById("infra-node-version"),
+            runtimeUptime: document.getElementById("infra-runtime-uptime"),
+            runtimeRss: document.getElementById("infra-runtime-rss"),
+            infraMemoryBar: document.getElementById("infra-memory-bar"),
+            infraStatusPanel: document.getElementById("infra-status-panel"),
+            infraStatusTitle: document.getElementById("infra-status-title"),
+            infraStatusCopy: document.getElementById("infra-status-copy"),
+            infraApiChip: document.getElementById("infra-api-chip"),
+            infraNginxChip: document.getElementById("infra-nginx-chip"),
+            infraPostgresChip: document.getElementById("infra-postgres-chip"),
+            infraNginxState: document.getElementById("infra-nginx-state"),
+            infraNodeState: document.getElementById("infra-node-state"),
+            infraPostgresState: document.getElementById("infra-postgres-state"),
+            infraNodeComponentVersion: document.getElementById("infra-node-component-version"),
+            infraUptimeCard: document.getElementById("infra-uptime-card"),
+            infraMemoryCard: document.getElementById("infra-memory-card"),
+            infraLoadCard: document.getElementById("infra-load-card"),
+            infraRuntimeMetricCard: document.getElementById("infra-runtime-card"),
             autoRefreshState: document.getElementById("auto-refresh-state"),
             refreshCountdown: document.getElementById("refresh-countdown"),
             lastUpdated: document.getElementById("last-updated"),
@@ -1274,6 +1817,13 @@
             history: false
         };
 
+        const infraEndpointState = {
+            health: null,
+            services: null,
+            system: null,
+            runtime: null
+        };
+
         let currentHistoryHours = 24;
         let lastHistoryPoints = [];
         let dashboardRefreshPromise = null;
@@ -1293,6 +1843,46 @@
         function setHistoryState(state, message) {
             elements.historyState.dataset.state = state;
             elements.historyState.textContent = message;
+        }
+
+        function setInfraStatusElement(element, state, label) {
+            element.dataset.state = state;
+            element.textContent = label;
+        }
+
+        function updateInfraOverallState() {
+            const states = Object.values(infraEndpointState);
+
+            if (states.some((state) => state === false)) {
+                elements.infraStatusPanel.dataset.state = "error";
+                elements.infraStatusTitle.textContent = "Atenção no ambiente";
+                elements.infraStatusCopy.textContent =
+                    "Uma ou mais leituras ao vivo não responderam corretamente.";
+                return;
+            }
+
+            if (states.every((state) => state === true)) {
+                elements.infraStatusPanel.dataset.state = "success";
+                elements.infraStatusTitle.textContent = "Ambiente operacional";
+                elements.infraStatusCopy.textContent =
+                    "API pública respondendo e serviços essenciais disponíveis.";
+                return;
+            }
+
+            elements.infraStatusPanel.dataset.state = "loading";
+            elements.infraStatusTitle.textContent = "Verificando ambiente";
+            elements.infraStatusCopy.textContent =
+                "Consultando os endpoints públicos do laboratório...";
+        }
+
+        function flashInfraMetric(element) {
+            element.classList.remove("is-refreshing");
+            void element.offsetWidth;
+            element.classList.add("is-refreshing");
+
+            window.setTimeout(() => {
+                element.classList.remove("is-refreshing");
+            }, 850);
         }
 
         function createMessage(message, state) {
@@ -1358,12 +1948,14 @@
             elements.systemMemory.textContent = message;
             elements.systemMemoryPercent.textContent = message;
             elements.systemLoad.textContent = message;
+            elements.infraMemoryBar.style.width = "0%";
         }
 
         function setRuntimeMetrics(message) {
             elements.runtimeNodeVersion.textContent = message;
             elements.runtimeUptime.textContent = message;
             elements.runtimeRss.textContent = message;
+            elements.infraNodeComponentVersion.textContent = message;
         }
 
         function runExclusive(key, task) {
@@ -1500,42 +2092,7 @@
         }
 
         function renderServices(services) {
-            elements.servicesList.replaceChildren();
-            elements.servicesList.setAttribute("aria-busy", "false");
-            elements.servicesCount.textContent =
-                services.length + " " + (services.length === 1 ? "registro" : "registros");
-
-            if (services.length === 0) {
-                elements.servicesList.appendChild(
-                    createMessage("A consulta funcionou, mas ainda não há serviços registrados.", "empty")
-                );
-                return;
-            }
-
-            services.forEach((service) => {
-                const item = document.createElement("article");
-                item.className = "service-item";
-
-                const identity = document.createElement("div");
-                const name = document.createElement("p");
-                const metadata = document.createElement("p");
-                const state = document.createElement("span");
-
-                name.className = "service-name";
-                metadata.className = "service-meta";
-                state.className = "service-state";
-
-                name.textContent =
-                    typeof service.name === "string" ? service.name : "Serviço sem nome";
-                metadata.textContent =
-                    service.id == null ? "ID indisponível" : "ID " + String(service.id);
-                state.textContent =
-                    typeof service.status === "string" ? service.status : "status desconhecido";
-
-                identity.append(name, metadata);
-                item.append(identity, state);
-                elements.servicesList.appendChild(item);
-            });
+            return services;
         }
 
         function loadHealth() {
@@ -1544,6 +2101,8 @@
                 elements.healthDetail.textContent = "Verificando se a API está acessível...";
                 elements.globalStatus.dataset.state = "loading";
                 elements.globalLabel.textContent = "Verificando API...";
+                setInfraStatusElement(elements.infraApiChip, "loading", "API verificando");
+                setInfraStatusElement(elements.infraNginxChip, "loading", "Nginx verificando");
 
                 try {
                     const health = await fetchJson("/api/health");
@@ -1557,12 +2116,22 @@
                         "A API respondeu com sucesso ao health check público.";
                     elements.globalStatus.dataset.state = "success";
                     elements.globalLabel.textContent = "API acessível";
+                    infraEndpointState.health = true;
+                    setInfraStatusElement(elements.infraApiChip, "success", "API online");
+                    setInfraStatusElement(elements.infraNginxChip, "success", "Nginx online");
+                    setInfraStatusElement(elements.infraNginxState, "success", "online");
+                    updateInfraOverallState();
                     markLastUpdated();
                 } catch (error) {
                     setCardState(elements.healthCard, elements.healthBadge, "error", "Indisponível");
                     elements.healthDetail.textContent = describeError(error);
                     elements.globalStatus.dataset.state = "error";
                     elements.globalLabel.textContent = "API indisponível";
+                    infraEndpointState.health = false;
+                    setInfraStatusElement(elements.infraApiChip, "error", "API indisponível");
+                    setInfraStatusElement(elements.infraNginxChip, "error", "Nginx sem confirmação");
+                    setInfraStatusElement(elements.infraNginxState, "error", "sem confirmação");
+                    updateInfraOverallState();
                     throw error;
                 }
             });
@@ -1573,13 +2142,11 @@
                 setCardState(elements.servicesCard, elements.servicesBadge, "loading", "Atualizando");
                 elements.servicesDetail.textContent = "Consultando os registros persistidos...";
 
-                if (!validData.services) {
-                    elements.servicesCount.textContent = "Consultando...";
-                    elements.servicesList.setAttribute("aria-busy", "true");
-                    elements.servicesList.replaceChildren(
-                        createMessage("Carregando serviços...", "loading")
-                    );
-                }
+                setInfraStatusElement(
+                    elements.infraPostgresChip,
+                    "loading",
+                    "PostgreSQL verificando"
+                );
 
                 try {
                     const services = await fetchJson("/api/services");
@@ -1593,18 +2160,36 @@
                     elements.servicesDetail.textContent =
                         "A API consultou o PostgreSQL e retornou uma lista válida.";
                     renderServices(services);
+                    infraEndpointState.services = true;
+                    setInfraStatusElement(
+                        elements.infraPostgresChip,
+                        "success",
+                        "PostgreSQL online"
+                    );
+                    setInfraStatusElement(
+                        elements.infraPostgresState,
+                        "success",
+                        "online"
+                    );
+                    updateInfraOverallState();
                     markLastUpdated();
                 } catch (error) {
                     const message = describeError(error);
                     setCardState(elements.servicesCard, elements.servicesBadge, "error", "Falha na consulta");
                     elements.servicesDetail.textContent = message;
 
-                    if (!validData.services) {
-                        elements.servicesCount.textContent = "Não disponível";
-                        elements.servicesList.setAttribute("aria-busy", "false");
-                        elements.servicesList.replaceChildren(createMessage(message, "error"));
-                    }
-
+                    infraEndpointState.services = false;
+                    setInfraStatusElement(
+                        elements.infraPostgresChip,
+                        "error",
+                        "PostgreSQL indisponível"
+                    );
+                    setInfraStatusElement(
+                        elements.infraPostgresState,
+                        "error",
+                        "indisponível"
+                    );
+                    updateInfraOverallState();
                     throw error;
                 }
             });
@@ -1614,6 +2199,9 @@
             return runExclusive("system", async () => {
                 setCardState(elements.systemCard, elements.systemBadge, "loading", "Atualizando");
                 elements.systemDetail.textContent = "Coletando métricas do host...";
+                flashInfraMetric(elements.infraUptimeCard);
+                flashInfraMetric(elements.infraMemoryCard);
+                flashInfraMetric(elements.infraLoadCard);
 
                 if (!validData.system) {
                     setSystemMetrics("Carregando...");
@@ -1637,8 +2225,12 @@
                         formatNumber(system.memory.totalMb) + " MB";
                     elements.systemMemoryPercent.textContent =
                         formatNumber(system.memory.usedPercent) + "%";
+                    elements.infraMemoryBar.style.width =
+                        Math.min(Math.max(system.memory.usedPercent, 0), 100) + "%";
                     elements.systemLoad.textContent =
                         formatNumber(system.loadAverage.one, 2);
+                    infraEndpointState.system = true;
+                    updateInfraOverallState();
                     markLastUpdated();
                 } catch (error) {
                     setCardState(elements.systemCard, elements.systemBadge, "error", "Indisponível");
@@ -1648,6 +2240,8 @@
                         setSystemMetrics("Indisponível");
                     }
 
+                    infraEndpointState.system = false;
+                    updateInfraOverallState();
                     throw error;
                 }
             });
@@ -1657,6 +2251,8 @@
             return runExclusive("runtime", async () => {
                 setCardState(elements.runtimeCard, elements.runtimeBadge, "loading", "Atualizando");
                 elements.runtimeDetail.textContent = "Consultando o processo da API...";
+                flashInfraMetric(elements.infraRuntimeMetricCard);
+                setInfraStatusElement(elements.infraNodeState, "loading", "verificando");
 
                 if (!validData.runtime) {
                     setRuntimeMetrics("Carregando...");
@@ -1671,9 +2267,13 @@
                     elements.runtimeDetail.textContent =
                         "Runtime Node.js da API respondendo normalmente.";
                     elements.runtimeNodeVersion.textContent = runtime.nodeVersion;
+                    elements.infraNodeComponentVersion.textContent = runtime.nodeVersion;
                     elements.runtimeUptime.textContent = formatDuration(runtime.uptimeSeconds);
                     elements.runtimeRss.textContent =
-                        formatNumber(runtime.memory.rssMb) + " MB";
+                        "RSS " + formatNumber(runtime.memory.rssMb) + " MB";
+                    infraEndpointState.runtime = true;
+                    setInfraStatusElement(elements.infraNodeState, "success", "online");
+                    updateInfraOverallState();
                     markLastUpdated();
                 } catch (error) {
                     setCardState(elements.runtimeCard, elements.runtimeBadge, "error", "Indisponível");
@@ -1683,6 +2283,9 @@
                         setRuntimeMetrics("Indisponível");
                     }
 
+                    infraEndpointState.runtime = false;
+                    setInfraStatusElement(elements.infraNodeState, "error", "indisponível");
+                    updateInfraOverallState();
                     throw error;
                 }
             });
@@ -2148,6 +2751,30 @@
             }
         });
     </script>
+<script>
+  (() => {
+    const payload = {
+      path: "/opslab/",
+      referrer: document.referrer || "",
+      language: navigator.language || "",
+      timezone:
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+      screenWidth: window.screen?.width || null,
+      screenHeight: window.screen?.height || null
+    };
+
+    fetch("/api/analytics/pageview", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload),
+      keepalive: true
+    }).catch(() => {
+      // Analytics nunca deve impedir a página de funcionar.
+    });
+  })();
+</script>
 
 </body>
 </html>

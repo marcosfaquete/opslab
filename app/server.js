@@ -286,6 +286,181 @@ const server = http.createServer(async (req, res) => {
 
   const pathname = requestUrl.pathname;
   const serviceMatch = pathname.match(/^\/services\/(\d+)$/);
+  // ANALYTICS - registrar pageview anônimo
+  if (req.method === "POST" && pathname === "/analytics/pageview") {
+    try {
+      const body = await readJsonBody(req);
+
+      const path =
+        typeof body.path === "string"
+          ? body.path.trim()
+          : "";
+
+      if (
+        path.length < 1 ||
+        path.length > 512 ||
+        !path.startsWith("/")
+      ) {
+        sendJson(res, 400, {
+          error: "invalid_pageview_path"
+        });
+        return;
+      }
+
+      const normalizeOptionalString = (value, maxLength) => {
+        if (typeof value !== "string") {
+          return null;
+        }
+
+        const normalized = value.trim();
+
+        if (normalized === "") {
+          return null;
+        }
+
+        return normalized.slice(0, maxLength);
+      };
+
+      const normalizeScreenDimension = (value) => {
+        const number = Number(value);
+
+        if (
+          !Number.isInteger(number) ||
+          number < 1 ||
+          number > 20000
+        ) {
+          return null;
+        }
+
+        return number;
+      };
+
+      const referrer =
+        normalizeOptionalString(body.referrer, 2048);
+
+      const language =
+        normalizeOptionalString(body.language, 64);
+
+      const timezone =
+        normalizeOptionalString(body.timezone, 128);
+
+      const screenWidth =
+        normalizeScreenDimension(body.screenWidth);
+
+      const screenHeight =
+        normalizeScreenDimension(body.screenHeight);
+
+      const userAgent =
+        normalizeOptionalString(
+          req.headers["user-agent"],
+          1024
+        );
+
+      const result = await pool.query(
+        `INSERT INTO public.analytics_pageviews (
+          path,
+          referrer,
+          language,
+          timezone,
+          screen_width,
+          screen_height,
+          user_agent
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING
+          id,
+          viewed_at AS "viewedAt";`,
+        [
+          path,
+          referrer,
+          language,
+          timezone,
+          screenWidth,
+          screenHeight,
+          userAgent
+        ]
+      );
+
+      sendJson(res, 201, {
+        status: "recorded",
+        id: result.rows[0].id,
+        viewedAt: result.rows[0].viewedAt
+      });
+    } catch (error) {
+      if (error.message === "invalid_json") {
+        sendJson(res, 400, {
+          error: "invalid_json"
+        });
+        return;
+      }
+
+      console.error(
+        "Analytics pageview insert failed:",
+        error
+      );
+
+      sendJson(res, 500, {
+        error: "analytics_database_error"
+      });
+    }
+
+    return;
+  }
+
+
+  // ANALYTICS - resumo público de pageviews
+  if (req.method === "GET" && pathname === "/analytics/summary") {
+    try {
+      const result = await pool.query(`
+        SELECT
+          COUNT(*)::int AS "total",
+
+          COUNT(*) FILTER (
+            WHERE viewed_at >= (
+              date_trunc(
+                'day',
+                now() AT TIME ZONE 'America/Sao_Paulo'
+              )
+              AT TIME ZONE 'America/Sao_Paulo'
+            )
+          )::int AS "today",
+
+          COUNT(*) FILTER (
+            WHERE viewed_at >= now() - interval '7 days'
+          )::int AS "last7Days",
+
+          COUNT(*) FILTER (
+            WHERE path = '/'
+          )::int AS "home",
+
+          COUNT(*) FILTER (
+            WHERE path = '/opslab/'
+          )::int AS "opslab"
+
+        FROM public.analytics_pageviews;
+      `);
+
+      sendJson(
+        res,
+        200,
+        result.rows[0],
+        {
+          "Cache-Control": "no-store"
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Analytics summary query failed:",
+        error
+      );
+
+      sendJson(res, 500, {
+        error: "analytics_summary_error"
+      });
+    }
+
+    return;
+  }
 
   if (pathname === "/monitoring/history" && req.method !== "GET") {
     sendJson(
