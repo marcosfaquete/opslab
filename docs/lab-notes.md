@@ -4,11 +4,13 @@
 
 ## Sobre o projeto
 
-O **OpsLab** é um laboratório prático de Linux, infraestrutura Cloud, backend, banco de dados, observabilidade e práticas de operação.
+O **OpsLab** é um laboratório prático de Linux, infraestrutura Cloud, backend, banco de dados, observabilidade e práticas de operação, executado em uma VPS real na DigitalOcean.
 
-O projeto foi desenvolvido em uma VPS real na DigitalOcean com o objetivo de aprender infraestrutura não apenas pela teoria, mas através da execução, validação, falhas, correções e documentação de um ambiente em produção.
+O projeto nasceu da intenção de compreender, na prática, o que existe entre uma aplicação publicada na Internet e a infraestrutura que a mantém disponível: sistema operacional, acesso remoto, firewall, servidor web, reverse proxy, processos, API, persistência, monitoramento, analytics e operação.
 
-A proposta do laboratório é compreender cada camada antes de automatizá-la.
+Durante sua evolução, o OpsLab passou a integrar o **Marcos Lab**, portal pessoal utilizado como base pública para projetos, produtos e experimentos. O OpsLab permanece como o projeto dedicado especificamente a infraestrutura e observabilidade.
+
+A proposta do laboratório é compreender cada camada antes de automatizá-la. O foco não foi apenas chegar a um ambiente funcional, mas registrar o processo de execução, validação, falhas, troubleshooting, correções e reconstrução.
 
 O princípio utilizado durante o desenvolvimento foi:
 
@@ -23,21 +25,19 @@ DOCUMENT
     ↓
 COMMIT
 ```
-
----
-
 # Arquitetura atual
 
-De forma simplificada, o ambiente evoluiu para:
+De forma simplificada, o ambiente atual pode ser representado assim:
 
 ```text
                          INTERNET
                             │
                             ▼
-                          DNS
+                           DNS
                             │
                             ▼
-                           VPS
+                     DigitalOcean VPS
+                            │
                      Ubuntu Server
                             │
                             ▼
@@ -45,28 +45,27 @@ De forma simplificada, o ambiente evoluiu para:
                             │
                             ▼
                           Nginx
-                   ┌────────┴────────┐
-                   │                 │
-                   │                 │
-              conteúdo web        /api/
-                   │                 │
-                   │           reverse proxy
-                   │                 │
-                   │                 ▼
-                   │          127.0.0.1:3000
-                   │                 │
-                   │              Node.js
-                   │                 │
-                   │                 ▼
-                   │          PostgreSQL 16
-                   │          127.0.0.1:5432
-                   │
-                   └── Marcos Lab / OpsLab
+                ┌───────────┼───────────┐
+                │           │           │
+                ▼           ▼           ▼
+               /        /opslab/      /api/
+          Marcos Lab      OpsLab    reverse proxy
+                                        │
+                                        ▼
+                                 127.0.0.1:3000
+                                        │
+                                     Node.js
+                                        │
+                                        ▼
+                                 PostgreSQL 16
+                                 127.0.0.1:5432
 ```
 
-O Nginx funciona como ponto público de entrada.
+O **Nginx** funciona como ponto público de entrada HTTP.
 
-A aplicação Node.js permanece em uma porta interna da VPS e o PostgreSQL também permanece restrito ao ambiente local.
+A Home do **Marcos Lab** e o frontend do **OpsLab** são publicados pelo servidor web, enquanto as requisições em `/api/` são encaminhadas para a aplicação Node.js através de reverse proxy.
+
+A aplicação Node.js permanece restrita ao loopback da VPS e o PostgreSQL também permanece acessível apenas no ambiente local.
 
 Além do caminho das requisições, serviços do Linux administram o ciclo de vida da aplicação e a coleta periódica de dados:
 
@@ -79,6 +78,8 @@ systemd
    │
    └── opslab-monitor.timer
             ↓
+      opslab-monitor.service
+            ↓
       coleta periódica
             ↓
        PostgreSQL
@@ -86,8 +87,28 @@ systemd
  monitoring_snapshots
 ```
 
----
+O ambiente também possui analytics first-party:
 
+```text
+Marcos Lab / OpsLab
+        │
+        ▼
+ coleta no navegador
+        │
+        ▼
+       API
+        │
+        ▼
+   PostgreSQL
+        │
+        ├── métricas agregadas
+        ├── sessões e pageviews
+        └── dados de engajamento
+                  │
+                  ▼
+       dashboard administrativo
+          de acesso restrito
+```
 # 01 — Repositório e metodologia
 
 **Status:** Concluído
@@ -766,13 +787,15 @@ dados persistentes
 
 ---
 
+---
+
 # 12 — Frontend integrado à infraestrutura real
 
 **Status:** Concluído
 
-O frontend do OpsLab evoluiu de uma página estática para uma interface que consulta informações reais da VPS através da API.
+O frontend do OpsLab evoluiu de uma página estática para uma interface que consulta dados reais do ambiente através da API executada na própria VPS.
 
-Entre os endpoints utilizados durante a evolução do projeto estão:
+Entre os endpoints públicos utilizados estão:
 
 ```text
 /api/health
@@ -782,24 +805,58 @@ Entre os endpoints utilizados durante a evolução do projeto estão:
 /api/monitoring/history
 ```
 
-A página passou a exibir informações como:
+A interface atual foi organizada em três grupos principais.
 
-* estado da aplicação;
-* runtime Node.js;
-* dados do sistema;
-* memória;
+## Live checks
+
+Leituras independentes verificam:
+
+* disponibilidade da API;
+* consulta ao PostgreSQL;
+* métricas do sistema operacional;
+* runtime Node.js.
+
+## Infraestrutura em operação
+
+O painel apresenta informações do próprio servidor e dos componentes que sustentam a aplicação, incluindo:
+
+* uptime da VPS;
+* utilização de memória;
+* load average de 1 minuto;
+* heap utilizado pelo Node.js;
+* estado do Nginx;
+* estado da API Node.js;
+* disponibilidade do PostgreSQL;
+* estado configurado do UFW;
+* hostname;
+* sistema operacional;
+* kernel;
+* versão do Node.js.
+
+## Histórico
+
+Os snapshots persistidos no PostgreSQL alimentam gráficos para:
+
+* memória utilizada;
 * load average;
-* serviços registrados;
-* infraestrutura configurada;
-* histórico de monitoramento.
+* memória RSS do processo Node.js.
 
-A atualização dos principais cards ocorre de forma periódica e escalonada para evitar que todas as requisições sejam disparadas exatamente no mesmo instante.
+Os períodos disponíveis são:
+
+```text
+1 hora
+6 horas
+24 horas
+7 dias
+```
+
+Os principais cards são atualizados periodicamente de forma escalonada, evitando disparar todas as consultas simultaneamente. A atualização automática também é pausada quando a página fica oculta e retomada quando volta a ficar ativa.
 
 ### Aprendizado
 
-O frontend deixou de simplesmente representar visualmente uma infraestrutura.
+O frontend deixou de representar uma infraestrutura de forma ilustrativa.
 
-Ele passou a funcionar como uma janela para dados coletados no ambiente real.
+Ele passou a funcionar como uma janela para o estado real do próprio ambiente em que está hospedado.
 
 ---
 
@@ -807,11 +864,9 @@ Ele passou a funcionar como uma janela para dados coletados no ambiente real.
 
 **Status:** Concluído
 
-Foi criada uma camada própria de coleta de snapshots.
+Foi criada uma camada própria de coleta de snapshots da infraestrutura.
 
-O sistema utiliza um serviço de coleta executado periodicamente por um timer do systemd.
-
-Modelo:
+O sistema utiliza um timer do systemd para executar periodicamente um serviço de monitoramento:
 
 ```text
 opslab-monitor.timer
@@ -825,40 +880,31 @@ PostgreSQL
 monitoring_snapshots
 ```
 
-A coleta é executada aproximadamente a cada:
+A coleta ocorre aproximadamente a cada:
 
 ```text
 5 minutos
 ```
 
-O frontend pode consultar períodos como:
-
-```text
-1 hora
-6 horas
-24 horas
-7 dias
-```
-
-Isso permitiu observar não apenas o estado instantâneo da VPS, mas também sua evolução ao longo do tempo.
-
-Durante essa etapa também foram encontrados problemas relacionados a dados antigos de monitoramento, o que exigiu inspeção, limpeza e nova validação dos períodos históricos.
-
-### Aprendizado
-
-Há uma diferença importante entre:
+Com isso, o OpsLab passou a observar duas dimensões diferentes:
 
 ```text
 estado atual
-```
-
-e:
-
-```text
+      +
 histórico de estados
 ```
 
-Observabilidade começa a ganhar mais valor quando é possível analisar comportamento ao longo do tempo.
+Durante a evolução desse componente foram encontrados dados antigos e períodos inconsistentes. O banco de monitoramento precisou ser inspecionado, limpo e novamente validado para que os gráficos representassem apenas o ambiente atual.
+
+Após ajustes, os dados históricos passaram a ser utilizados diretamente pela interface do OpsLab.
+
+### Aprendizado
+
+Coletar uma métrica uma única vez mostra apenas um instante.
+
+Persistir medições ao longo do tempo permite observar comportamento, tendência e estabilidade.
+
+Também ficou evidente que observabilidade depende da qualidade dos dados: um gráfico correto visualmente ainda pode estar errado se a origem, período ou conjunto de snapshots estiver inconsistente.
 
 ---
 
@@ -866,31 +912,110 @@ Observabilidade começa a ganhar mais valor quando é possível analisar comport
 
 **Status:** Implementado
 
-Também foi introduzido registro próprio de acessos ao laboratório.
+O analytics começou como uma coleta simples de pageviews e evoluiu para um subsistema próprio de telemetria do Marcos Lab e do OpsLab.
 
-Em vez de depender exclusivamente de um serviço externo de analytics, o OpsLab passou a registrar pageviews através de sua própria aplicação e banco de dados.
+A Home e o OpsLab registram acessos de forma assíncrona, sem permitir que uma falha no analytics impeça o carregamento normal das páginas.
 
-O fluxo segue aproximadamente:
+Fluxo simplificado:
 
 ```text
 navegador
    ↓
-OpsLab
+Marcos Lab / OpsLab
    ↓
-API
+POST /api/analytics/pageview
+   ↓
+Node.js
    ↓
 PostgreSQL
    ↓
-pageviews
+dados de acesso e engajamento
 ```
 
-A coleta foi desenvolvida de forma que uma falha no analytics não impeça o carregamento normal da página.
+O sistema passou a acompanhar métricas agregadas como:
+
+* pageviews;
+* visitantes;
+* sessões;
+* reloads;
+* acessos da Home;
+* acessos do OpsLab;
+* totais acumulados;
+* atividade dos últimos 7 dias.
+
+Também foram adicionadas métricas de engajamento associadas às sessões, incluindo:
+
+* tempo ativo;
+* profundidade máxima visualizada;
+* ocorrência de scroll real;
+* páginas distintas;
+* navegações registradas durante a sessão.
+
+O dashboard possui um ranking de acessos mais engajados e permite ordenar os resultados por:
+
+```text
+engajamento
+mais tempo
+maior profundidade
+```
+
+e filtrar por:
+
+```text
+hoje
+7 dias
+30 dias
+todo o histórico
+```
+
+Além dos agregados, o histórico administrativo permite inspecionar dados técnicos dos pageviews, quando disponíveis, como:
+
+* tipo de navegação;
+* dispositivo;
+* navegador;
+* sistema operacional;
+* resolução;
+* viewport;
+* pixel ratio;
+* idioma;
+* timezone;
+* identificadores reduzidos de visitante e sessão;
+* origem/referrer;
+* parâmetros UTM;
+* localização aproximada;
+* user agent;
+* dados de engagement.
+
+O painel detalhado foi mantido como uma área administrativa de acesso restrito. A intenção é separar a apresentação pública do laboratório dos dados operacionais utilizados para análise.
+
+A API utilizada pelo dashboard inclui, entre outros:
+
+```text
+/api/analytics/summary
+/api/analytics/pageviews
+```
 
 ### Aprendizado
 
-Analytics também pode ser tratado como uma funcionalidade de backend.
+Analytics deixou de ser apenas um contador de visitas.
 
-A aplicação pode registrar sua própria telemetria, desde que isso seja feito conscientemente e sem tornar esse componente um ponto crítico para o funcionamento do site.
+Ele passou a ser tratado como uma pequena pipeline de telemetria:
+
+```text
+evento
+  ↓
+coleta
+  ↓
+persistência
+  ↓
+agregação
+  ↓
+consulta
+  ↓
+visualização
+```
+
+Também foi reforçado o princípio de **fail-open para telemetria**: se o analytics falhar, a aplicação principal deve continuar funcionando normalmente.
 
 ---
 
@@ -900,7 +1025,7 @@ A aplicação pode registrar sua própria telemetria, desde que isso seja feito 
 
 Durante a evolução do projeto foi criado um novo ambiente e o domínio pessoal passou a apontar para a VPS.
 
-O hostname atual do laboratório passou a ser:
+O hostname atual do laboratório é:
 
 ```text
 marcos-lab-01
@@ -911,20 +1036,24 @@ O Nginx passou a hospedar mais de uma responsabilidade:
 ```text
 marcosfaquete.com.br
         │
-        ├── Marcos Lab
+        ├── /
+        │   ↓
+        │ Marcos Lab
         │
-        └── /opslab/
-                ↓
-              OpsLab
+        ├── /opslab/
+        │      ↓
+        │    OpsLab
+        │
+        └── /api/
+               ↓
+          Node.js API
 ```
 
-A configuração também mantém o backend atrás de:
+O **Marcos Lab** deixou de funcionar apenas como uma página de entrada para o OpsLab e passou a assumir o papel de portal pessoal para projetos, produtos e experimentos.
 
-```text
-/api/
-```
+O OpsLab é o primeiro projeto publicado nesse formato e permanece dedicado a infraestrutura, operação e observabilidade.
 
-Isso permitiu transformar a VPS em uma base para diferentes experimentos, mantendo o OpsLab como um dos projetos disponíveis dentro do ambiente.
+A estrutura foi pensada para permitir a inclusão futura de novos projetos sem transformar todos eles em uma única aplicação.
 
 ### Aprendizado
 
@@ -935,10 +1064,13 @@ DNS
 → encontra o servidor
 
 Nginx
-→ decide para onde a requisição deve ir
+→ recebe a requisição e decide seu destino
 
 aplicação
-→ processa a lógica da requisição
+→ executa a lógica
+
+Marcos Lab
+→ organiza a apresentação pública dos projetos
 ```
 
 ---
@@ -969,19 +1101,31 @@ Esse processo reforçou uma das ideias definidas no início do projeto:
 
 > Uma VPS deve ser tratada como infraestrutura substituível, e não como a única cópia permanente do sistema.
 
+A reconstrução também separou com mais clareza:
+
+```text
+infraestrutura em produção
+        ≠
+repositório Git
+        ≠
+backups
+        ≠
+secrets
+```
+
 ### Aprendizado
 
 Conseguir construir uma infraestrutura uma vez é importante.
 
-Conseguir entender e reconstruir essa infraestrutura é uma evidência muito maior de domínio do processo.
+Conseguir compreender, reconstruir e validar novamente essa infraestrutura é uma evidência maior de domínio do processo.
 
 ---
 
 # 17 — Deploy, Git e validação operacional
 
-**Status:** Em evolução contínua
+**Status:** Prática contínua
 
-O processo de publicação também evoluiu.
+O processo de publicação evoluiu junto com o projeto.
 
 Alterações passaram a ser realizadas com maior preocupação em relação a:
 
@@ -992,55 +1136,82 @@ Alterações passaram a ser realizadas com maior preocupação em relação a:
 * commits;
 * Pull Requests;
 * merge;
+* rebase;
+* resolução de conflitos;
 * sincronização entre Git e produção;
 * validação depois da publicação.
 
-Entre as verificações utilizadas estão:
+Entre as verificações utilizadas no fluxo Git estão:
 
 ```bash
 git status
 git diff
 git diff --cached
 git diff --check
+git log
+git rev-parse
 ```
 
-Na VPS:
+Na VPS, as validações passaram a incluir ferramentas como:
 
 ```bash
 nginx -t
 systemctl status
+journalctl
 curl
+grep
+sha256sum
 ```
 
-Também foram utilizados testes dos endpoints públicos após alterações.
+Em alterações importantes, o artefato publicado foi comparado com o arquivo esperado e endpoints foram consultados depois do deploy.
 
-Em mudanças importantes, cópias do estado funcional anterior foram mantidas temporariamente para facilitar rollback.
+Um fluxo típico passou a se aproximar de:
+
+```text
+entender a alteração
+        ↓
+criar ou selecionar estado de trabalho
+        ↓
+editar
+        ↓
+validar localmente
+        ↓
+backup quando necessário
+        ↓
+versionar
+        ↓
+Pull Request / merge
+        ↓
+publicar
+        ↓
+validar produção
+        ↓
+comparar estado esperado
+        ↓
+rollback se necessário
+```
+
+Durante o projeto também ocorreram conflitos reais de Git e diferenças entre o estado do repositório e o conteúdo publicado. Esses casos exigiram identificar qual versão era a correta antes de continuar.
 
 ### Aprendizado
 
 Deploy não significa apenas copiar um arquivo novo para produção.
 
-Um processo mais seguro possui:
+A publicação segura exige saber:
 
 ```text
-alteração
-   ↓
-revisão
-   ↓
-backup
-   ↓
-deploy
-   ↓
-validação
-   ↓
-rollback se necessário
-   ↓
-registro no Git
+o que mudou
+qual versão está sendo publicada
+qual versão está rodando
+como validar
+como voltar
 ```
 
 ---
 
 # 18 — Segurança em camadas
+
+**Status:** Baseline implementado
 
 A segurança do laboratório não depende de uma única ferramenta.
 
@@ -1049,13 +1220,15 @@ Ela foi construída através de várias decisões complementares:
 ```text
 SSH por chave
         +
+autenticação SSH por senha desabilitada
+        +
 usuário administrativo separado
         +
 sudo
         +
 UFW default deny
         +
-somente portas necessárias
+somente portas necessárias expostas
         +
 Nginx como entrada HTTP
         +
@@ -1072,17 +1245,25 @@ secrets fora do Git
 validação antes de reload
         +
 backups antes de alterações críticas
+        +
+dashboard operacional restrito
 ```
+
+O ambiente público apresenta apenas as informações necessárias para demonstrar o laboratório, enquanto o dashboard detalhado de analytics permanece separado da navegação pública.
 
 ### Princípio
 
 Segurança não é um botão que deixa o servidor "seguro".
 
-Ela é o resultado de reduzir exposição, separar responsabilidades, controlar privilégios e validar mudanças.
+Ela é o resultado de reduzir exposição, separar responsabilidades, controlar privilégios, proteger segredos e validar mudanças.
+
+A segurança permanece uma prática contínua, mesmo com um baseline já implementado.
 
 ---
 
 # 19 — Principais falhas e troubleshooting
+
+**Status:** Prática contínua
 
 Parte importante do projeto foi entender o que acontece quando alguma camada não funciona.
 
@@ -1108,7 +1289,7 @@ Foi necessário identificar qual processo já possuía o socket.
 
 ### Configuração Nginx
 
-Foi estudada a importância do `Host` e da seleção de server blocks.
+Foi estudada a importância do header `Host`, dos server blocks e da ordem em que o Nginx seleciona o virtual host antes de processar as regras `location`.
 
 ### Process failure
 
@@ -1124,17 +1305,42 @@ A VPS foi reiniciada para validar que os serviços retornavam sem intervenção 
 
 ### Histórico de monitoramento
 
-Dados antigos precisaram ser identificados e corrigidos para que os períodos exibidos representassem corretamente o ambiente atual.
+Dados antigos precisaram ser identificados, removidos e novamente validados para que os períodos históricos representassem corretamente o ambiente atual.
+
+### Estado de produção versus Git
+
+Em alguns momentos, o arquivo que estava sendo executado em produção e o estado disponível no repositório não eram exatamente os mesmos.
+
+Isso exigiu comparação de conteúdo, commits e hashes antes de decidir qual versão preservar.
+
+### Alterações de frontend
+
+Mudanças visuais precisaram ser realizadas sem quebrar integrações existentes com API, monitoramento e analytics. Backups do HTML funcional foram utilizados como proteção antes de alterações maiores.
 
 ### Aprendizado
 
 Erros deixaram de ser apenas algo a corrigir.
 
-Eles passaram a ser utilizados para compreender qual camada da arquitetura havia falhado.
+Eles passaram a ser tratados como sintomas de uma camada específica:
+
+```text
+rede?
+Nginx?
+processo?
+API?
+banco?
+frontend?
+Git?
+dados?
+```
+
+O troubleshooting ficou mais eficiente quando o problema passou a ser localizado antes da tentativa de correção.
 
 ---
 
 # 20 — Modelo mental do OpsLab
+
+**Status:** Consolidado na v1
 
 Uma das principais evoluções durante o projeto foi deixar de enxergar o servidor como uma única "caixa".
 
@@ -1157,29 +1363,42 @@ Nginx
 → servidor web e reverse proxy
 
 Node.js
-→ runtime da aplicação
+→ runtime da aplicação e API
 
 systemd
-→ gerencia processos e tarefas
+→ gerencia processos e tarefas periódicas
 
 PostgreSQL
 → persistência de dados
 
 Git/GitHub
-→ versionamento e histórico
+→ versionamento, histórico e colaboração no fluxo de mudança
+
+Marcos Lab
+→ portal público dos projetos
 
 OpsLab frontend
-→ apresenta o estado do laboratório
+→ apresenta o estado da infraestrutura
 
 monitoring snapshots
-→ registram comportamento ao longo do tempo
+→ registram comportamento do servidor ao longo do tempo
+
+analytics first-party
+→ registra uso e engajamento da aplicação
+
+dashboard administrativo
+→ permite analisar a telemetria detalhada
 ```
 
 Cada camada possui uma função diferente.
 
+A compreensão dessas fronteiras passou a ser mais importante do que memorizar comandos isolados.
+
 ---
 
 # 21 — Principais aprendizados
+
+**Status:** Consolidado na v1
 
 Durante a construção do OpsLab foram praticados conceitos relacionados a:
 
@@ -1221,7 +1440,8 @@ Durante a construção do OpsLab foram praticados conceitos relacionados a:
 * password authentication;
 * princípio do menor privilégio;
 * isolamento de serviços;
-* secrets fora do repositório.
+* secrets fora do repositório;
+* separação entre áreas públicas e administrativas.
 
 ## Web
 
@@ -1231,7 +1451,8 @@ Durante a construção do OpsLab foram praticados conceitos relacionados a:
 * virtual hosts;
 * reverse proxy;
 * headers HTTP;
-* status HTTP.
+* status HTTP;
+* publicação de múltiplas rotas e projetos.
 
 ## Backend
 
@@ -1243,7 +1464,8 @@ Durante a construção do OpsLab foram praticados conceitos relacionados a:
 * JSON;
 * CRUD;
 * validação;
-* tratamento de erros.
+* tratamento de erros;
+* endpoints de telemetria.
 
 ## Banco de dados
 
@@ -1257,19 +1479,34 @@ Durante a construção do OpsLab foram praticados conceitos relacionados a:
 * grants;
 * SCRAM-SHA-256;
 * queries parametrizadas;
-* persistência.
+* persistência;
+* dados de monitoramento e analytics.
+
+## Observabilidade
+
+* health checks;
+* métricas instantâneas;
+* snapshots;
+* histórico;
+* séries temporais simples;
+* coleta periódica;
+* pageviews;
+* visitantes;
+* sessões;
+* engagement;
+* visualização de telemetria.
 
 ## Operação
 
 * logs;
-* health checks;
 * monitoramento;
-* snapshots;
 * timers;
 * deploy;
 * rollback;
 * backups temporários;
-* validação pós-deploy.
+* validação pós-deploy;
+* comparação do artefato publicado;
+* troubleshooting por camada.
 
 ## Git
 
@@ -1281,40 +1518,72 @@ Durante a construção do OpsLab foram praticados conceitos relacionados a:
 * branches;
 * Pull Requests;
 * merge;
+* rebase;
+* conflitos;
 * histórico;
 * recuperação.
 
 ---
 
-# 22 — Estado atual
+# 22 — Estado atual — OpsLab v1
 
-Atualmente o OpsLab possui uma infraestrutura funcional que combina:
+**Status:** Marco v1 concluído
+
+O OpsLab v1 chegou a um estado funcional, público e coerente com o objetivo inicial do laboratório.
+
+A fotografia atual pode ser resumida assim:
 
 ```text
-Cloud VPS
-Ubuntu Server
-SSH
-UFW
-Nginx
-Node.js
-systemd
-PostgreSQL
-API
-frontend integrado
-monitoramento
-histórico de métricas
-analytics first-party
-Git/GitHub
-domínio próprio
+OPSLAB V1
+│
+├── Infrastructure
+│   ├── DigitalOcean VPS
+│   ├── Ubuntu Server 24.04 LTS
+│   ├── SSH
+│   ├── UFW
+│   └── Nginx
+│
+├── Application
+│   ├── Node.js
+│   ├── systemd
+│   ├── API
+│   └── PostgreSQL 16
+│
+├── Observability
+│   ├── live health checks
+│   ├── system metrics
+│   ├── monitoring snapshots
+│   ├── historical charts
+│   └── first-party analytics
+│
+├── Analytics
+│   ├── pageviews
+│   ├── visitantes
+│   ├── sessões
+│   ├── engagement
+│   └── dashboard administrativo
+│
+└── Operations
+    ├── Git / GitHub
+    ├── branches / Pull Requests
+    ├── deploy validation
+    ├── backups / rollback
+    └── troubleshooting
 ```
 
-O projeto deixou de ser somente um exercício de provisionamento.
+O projeto deixou de ser somente um exercício para aprender a provisionar uma VPS.
 
-Ele passou a funcionar como um laboratório onde infraestrutura, aplicação e observabilidade convivem em um ambiente real.
+Ele passou a reunir infraestrutura, aplicação, persistência, observabilidade e operação em um ambiente real, acessível através do Marcos Lab.
+
+Declarar a **v1 concluída** não significa encerrar o projeto.
+
+Significa que o objetivo original — compreender e operar uma infraestrutura Linux real do provisionamento à observabilidade — atingiu um marco consistente e apresentável.
 
 ---
 
 # 23 — Próximas evoluções
+
+**Status:** Roadmap
 
 As seguintes tecnologias e práticas podem ser estudadas futuramente, mas **não devem ser interpretadas como já implementadas**:
 
@@ -1330,13 +1599,15 @@ As seguintes tecnologias e práticas podem ser estudadas futuramente, mas **não
 * infraestrutura como código;
 * disaster recovery mais completo.
 
+Outras melhorias do Marcos Lab e novos projetos também podem utilizar a mesma VPS ou outras arquiteturas, conforme a necessidade de cada experimento.
+
 Essas etapas somente devem ser adicionadas ao estado concluído quando forem realmente implementadas e validadas.
 
 ---
 
 # Conclusão
 
-O OpsLab começou como um exercício para aprender a colocar uma página HTML dentro de uma VPS.
+O OpsLab começou como uma tentativa de entender, na prática, o que era uma VPS e como uma aplicação poderia ser executada dentro dela.
 
 Durante sua evolução passou a envolver:
 
@@ -1370,8 +1641,12 @@ deploy
 operação
 ```
 
-Mais importante do que cada ferramenta individual foi compreender como essas camadas se relacionam.
+Mais importante do que cada ferramenta individual foi compreender como essas camadas se relacionam e onde termina a responsabilidade de uma e começa a da seguinte.
 
-O objetivo do laboratório continua sendo aprender infraestrutura através de uma combinação de:
+O Marcos Lab tornou-se a base pública para essa experiência, enquanto o OpsLab registra especificamente a jornada de infraestrutura e observabilidade.
+
+O marco atual encerra a **v1 do OpsLab** como projeto de estudo e portfólio, mantendo o laboratório aberto para futuras evoluções.
+
+O princípio permanece:
 
 > **entender, executar, testar, quebrar, diagnosticar, corrigir, documentar e versionar.**
