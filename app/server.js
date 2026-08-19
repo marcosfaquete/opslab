@@ -10,8 +10,19 @@ const BYTES_PER_MEGABYTE = 1024 * 1024;
 const DEFAULT_HISTORY_HOURS = 24;
 const MAX_HISTORY_POINTS = 2016;
 const ALLOWED_HISTORY_HOURS = new Set([1, 6, 24, 168]);
+const ALLOWED_NAVIGATION_TYPES = new Set([
+  "navigate",
+  "reload",
+  "back_forward",
+  "prerender",
+  "unknown"
+]);
+const UUID_V4_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const pool = new Pool();
+
+
 
 const HISTORY_SELECT_SQL = [
   "SELECT",
@@ -210,6 +221,30 @@ function toNullableNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+function normalizeUuid(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim();
+
+  return UUID_V4_PATTERN.test(normalized)
+    ? normalized.toLowerCase()
+    : null;
+}
+
+function normalizeNavigationType(value) {
+  if (typeof value !== "string") {
+    return "unknown";
+  }
+
+  const normalized = value.trim();
+
+  return ALLOWED_NAVIGATION_TYPES.has(normalized)
+    ? normalized
+    : "unknown";
+}
+
 function serializeHistoryRow(row) {
   const collectedAt = new Date(row.collectedAt);
 
@@ -253,6 +288,7 @@ function historyErrorResponse(error) {
     body: { error: "monitoring_history_error" }
   };
 }
+
 
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
@@ -335,6 +371,20 @@ const server = http.createServer(async (req, res) => {
         return number;
       };
 
+      const normalizePixelRatio = (value) => {
+        const number = Number(value);
+
+        if (
+          !Number.isFinite(number) ||
+          number <= 0 ||
+          number > 20
+        ) {
+          return null;
+        }
+
+        return Math.round(number * 100) / 100;
+      };
+
       const referrer =
         normalizeOptionalString(body.referrer, 2048);
 
@@ -350,11 +400,41 @@ const server = http.createServer(async (req, res) => {
       const screenHeight =
         normalizeScreenDimension(body.screenHeight);
 
+      const viewportWidth =
+        normalizeScreenDimension(body.viewportWidth);
+
+      const viewportHeight =
+        normalizeScreenDimension(body.viewportHeight);
+
+      const devicePixelRatio =
+        normalizePixelRatio(body.devicePixelRatio);
+
+      const utmSource =
+        normalizeOptionalString(body.utmSource, 200);
+
+      const utmMedium =
+        normalizeOptionalString(body.utmMedium, 200);
+
+      const utmCampaign =
+        normalizeOptionalString(body.utmCampaign, 300);
+
+      const utmContent =
+        normalizeOptionalString(body.utmContent, 300);
+
+      const utmTerm =
+        normalizeOptionalString(body.utmTerm, 300);
+
       const userAgent =
         normalizeOptionalString(
           req.headers["user-agent"],
           1024
         );
+
+
+      const visitorId = normalizeUuid(body.visitorId);
+      const sessionId = normalizeUuid(body.sessionId);
+      const navigationType =
+        normalizeNavigationType(body.navigationType);
 
       const result = await pool.query(
         `INSERT INTO public.analytics_pageviews (
@@ -364,9 +444,24 @@ const server = http.createServer(async (req, res) => {
           timezone,
           screen_width,
           screen_height,
-          user_agent
+          user_agent,
+          visitor_id,
+          session_id,
+          navigation_type,
+          viewport_width,
+          viewport_height,
+          device_pixel_ratio,
+          utm_source,
+          utm_medium,
+          utm_campaign,
+          utm_content,
+          utm_term
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES (
+          $1, $2, $3, $4, $5, $6,
+          $7, $8, $9, $10, $11, $12,
+          $13, $14, $15, $16, $17, $18
+        )
         RETURNING
           id,
           viewed_at AS "viewedAt";`,
@@ -377,7 +472,18 @@ const server = http.createServer(async (req, res) => {
           timezone,
           screenWidth,
           screenHeight,
-          userAgent
+          userAgent,
+          visitorId,
+          sessionId,
+          navigationType,
+          viewportWidth,
+          viewportHeight,
+          devicePixelRatio,
+          utmSource,
+          utmMedium,
+          utmCampaign,
+          utmContent,
+          utmTerm
         ]
       );
 
@@ -386,6 +492,7 @@ const server = http.createServer(async (req, res) => {
         id: result.rows[0].id,
         viewedAt: result.rows[0].viewedAt
       });
+
     } catch (error) {
       if (error.message === "invalid_json") {
         sendJson(res, 400, {
@@ -408,42 +515,790 @@ const server = http.createServer(async (req, res) => {
   }
 
 
-  // ANALYTICS - resumo público de pageviews
+
+
+  // ANALYTICS - engagement do pageview
+  if (req.method === "POST" && pathname === "/analytics/engagement") {
+    try {
+      const body = await readJsonBody(req);
+
+      const pageviewId = Number(body.pageviewId);
+
+      if (
+        !Number.isSafeInteger(pageviewId) ||
+        pageviewId < 1
+      ) {
+        sendJson(res, 400, {
+          error: "invalid_engagement_pageview_id"
+        });
+        return;
+      }
+
+      const visitorId = normalizeUuid(body.visitorId);
+      const sessionId = normalizeUuid(body.sessionId);
+
+      if (!visitorId || !sessionId) {
+        sendJson(res, 400, {
+          error: "invalid_engagement_identity"
+        });
+        return;
+      }
+
+      const activeTimeMs = Number(body.activeTimeMs);
+      const maxScrollPercent = Number(body.maxScrollPercent);
+      const didScroll = body.didScroll === true;
+
+      if (
+        !Number.isFinite(activeTimeMs) ||
+        activeTimeMs < 0 ||
+        activeTimeMs > 86400000
+      ) {
+        sendJson(res, 400, {
+          error: "invalid_engagement_active_time"
+        });
+        return;
+      }
+
+      if (
+        !Number.isFinite(maxScrollPercent) ||
+        maxScrollPercent < 0 ||
+        maxScrollPercent > 100
+      ) {
+        sendJson(res, 400, {
+          error: "invalid_engagement_scroll"
+        });
+        return;
+      }
+
+      const normalizedActiveTime =
+        Math.round(activeTimeMs);
+
+      const normalizedScroll =
+        Math.round(maxScrollPercent);
+
+      const result = await pool.query(
+        `UPDATE public.analytics_pageviews
+         SET
+           active_time_ms =
+             GREATEST(
+               active_time_ms,
+               $1::bigint
+             ),
+
+           max_scroll_percent =
+             GREATEST(
+               max_scroll_percent,
+               $2::smallint
+             ),
+
+           did_scroll =
+             did_scroll OR $3::boolean,
+
+           engagement_updated_at = now()
+
+         WHERE id = $4
+           AND visitor_id = $5::uuid
+           AND session_id = $6::uuid
+
+         RETURNING id;`,
+        [
+          normalizedActiveTime,
+          normalizedScroll,
+          didScroll,
+          pageviewId,
+          visitorId,
+          sessionId
+        ]
+      );
+
+      if (result.rowCount === 0) {
+        sendJson(res, 404, {
+          error: "engagement_pageview_not_found"
+        });
+        return;
+      }
+
+      sendJson(res, 200, {
+        status: "updated"
+      });
+
+    } catch (error) {
+      if (error.message === "invalid_json") {
+        sendJson(res, 400, {
+          error: "invalid_json"
+        });
+        return;
+      }
+
+      console.error(
+        "Analytics engagement update failed:",
+        error
+      );
+
+      sendJson(res, 500, {
+        error: "analytics_engagement_error"
+      });
+    }
+
+    return;
+  }
+
+
+  // ANALYTICS - histórico detalhado para o painel privado
+  if (req.method === "GET" && pathname === "/analytics/pageviews") {
+    try {
+      const parameterNames = [...new Set(requestUrl.searchParams.keys())];
+
+      if (
+        parameterNames.some(
+          (name) =>
+            name !== "limit" &&
+            name !== "beforeId" &&
+            name !== "offset" &&
+            name !== "mode" &&
+            name !== "period"
+        )
+      ) {
+        sendJson(res, 400, {
+          error: "invalid_analytics_pageviews_query"
+        });
+        return;
+      }
+
+      const limitRaw = requestUrl.searchParams.get("limit");
+      const beforeIdRaw = requestUrl.searchParams.get("beforeId");
+      const offsetRaw = requestUrl.searchParams.get("offset");
+      const mode =
+        requestUrl.searchParams.get("mode") || "recent";
+      const period =
+        requestUrl.searchParams.get("period") || "all";
+
+      const allowedModes =
+        new Set([
+          "recent",
+          "engaged",
+          "time",
+          "depth"
+        ]);
+
+      const allowedPeriods =
+        new Set([
+          "today",
+          "7d",
+          "30d",
+          "all"
+        ]);
+
+      if (!allowedModes.has(mode)) {
+        sendJson(res, 400, {
+          error: "invalid_analytics_pageviews_mode"
+        });
+        return;
+      }
+
+      if (!allowedPeriods.has(period)) {
+        sendJson(res, 400, {
+          error: "invalid_analytics_pageviews_period"
+        });
+        return;
+      }
+
+      let limit = 40;
+
+      if (limitRaw !== null) {
+        if (!/^\d+$/.test(limitRaw)) {
+          sendJson(res, 400, {
+            error: "invalid_analytics_pageviews_limit"
+          });
+          return;
+        }
+
+        limit = Number(limitRaw);
+
+        if (
+          !Number.isInteger(limit) ||
+          limit < 1 ||
+          limit > 100
+        ) {
+          sendJson(res, 400, {
+            error: "invalid_analytics_pageviews_limit"
+          });
+          return;
+        }
+      }
+
+      let beforeId = null;
+
+      if (beforeIdRaw !== null) {
+        if (!/^\d+$/.test(beforeIdRaw)) {
+          sendJson(res, 400, {
+            error: "invalid_analytics_pageviews_before_id"
+          });
+          return;
+        }
+
+        beforeId = Number(beforeIdRaw);
+
+        if (
+          !Number.isSafeInteger(beforeId) ||
+          beforeId < 1
+        ) {
+          sendJson(res, 400, {
+            error: "invalid_analytics_pageviews_before_id"
+          });
+          return;
+        }
+      }
+
+      let offset = 0;
+
+      if (offsetRaw !== null) {
+        if (!/^\d+$/.test(offsetRaw)) {
+          sendJson(res, 400, {
+            error: "invalid_analytics_pageviews_offset"
+          });
+          return;
+        }
+
+        offset = Number(offsetRaw);
+
+        if (
+          !Number.isSafeInteger(offset) ||
+          offset < 0
+        ) {
+          sendJson(res, 400, {
+            error: "invalid_analytics_pageviews_offset"
+          });
+          return;
+        }
+      }
+
+      if (mode !== "recent") {
+        const orderBy =
+          mode === "time"
+            ? '"activeTimeMs" DESC, p.id DESC'
+            : mode === "depth"
+              ? '"maxScrollPercent" DESC, p.id DESC'
+              : '"engagementScore" DESC, p.id DESC';
+
+        const rankingResult = await pool.query(
+          `
+          WITH session_metrics AS (
+            SELECT
+              session_id,
+
+              COUNT(*) AS session_pageviews,
+
+              COUNT(DISTINCT path) AS distinct_pages,
+
+              COUNT(*) FILTER (
+                WHERE navigation_type IN (
+                  'navigate',
+                  'back_forward'
+                )
+              ) AS session_navigations
+
+            FROM public.analytics_pageviews
+
+            WHERE session_id IS NOT NULL
+
+            GROUP BY session_id
+          ),
+
+          ranked AS (
+            SELECT
+              p.id,
+              p.viewed_at AS "viewedAt",
+              p.path,
+              p.referrer,
+              p.language,
+              p.timezone,
+              p.screen_width AS "screenWidth",
+              p.screen_height AS "screenHeight",
+              p.user_agent AS "userAgent",
+              p.country_code AS "countryCode",
+              p.region,
+              p.city,
+              p.visitor_id AS "visitorId",
+              p.session_id AS "sessionId",
+              p.navigation_type AS "navigationType",
+
+              p.active_time_ms AS "activeTimeMs",
+              p.max_scroll_percent AS "maxScrollPercent",
+              p.did_scroll AS "didScroll",
+
+              p.viewport_width AS "viewportWidth",
+              p.viewport_height AS "viewportHeight",
+              p.device_pixel_ratio AS "devicePixelRatio",
+
+              p.utm_source AS "utmSource",
+              p.utm_medium AS "utmMedium",
+              p.utm_campaign AS "utmCampaign",
+              p.utm_content AS "utmContent",
+              p.utm_term AS "utmTerm",
+
+              p.engagement_updated_at AS "engagementUpdatedAt",
+
+              COALESCE(
+                sm.session_pageviews,
+                1
+              ) AS "sessionPageviews",
+
+              COALESCE(
+                sm.distinct_pages,
+                1
+              ) AS "distinctPages",
+
+              COALESCE(
+                sm.session_navigations,
+                CASE
+                  WHEN p.navigation_type IN (
+                    'navigate',
+                    'back_forward'
+                  )
+                  THEN 1
+                  ELSE 0
+                END
+              ) AS "sessionNavigations",
+
+              ROUND(
+                (
+                  LEAST(
+                    COALESCE(
+                      p.active_time_ms,
+                      0
+                    )::numeric / 120000,
+                    1
+                  ) * 45
+                )
+
+                +
+
+                (
+                  LEAST(
+                    COALESCE(
+                      p.max_scroll_percent,
+                      0
+                    )::numeric / 100,
+                    1
+                  ) * 25
+                )
+
+                +
+
+                (
+                  CASE
+                    WHEN p.did_scroll IS TRUE
+                    THEN 10
+                    ELSE 0
+                  END
+                )
+
+                +
+
+                (
+                  LEAST(
+                    GREATEST(
+                      COALESCE(
+                        sm.distinct_pages,
+                        1
+                      ) - 1,
+                      0
+                    )::numeric,
+                    1
+                  ) * 10
+                )
+
+                +
+
+                (
+                  LEAST(
+                    GREATEST(
+                      COALESCE(
+                        sm.session_navigations,
+                        1
+                      ) - 1,
+                      0
+                    )::numeric / 2,
+                    1
+                  ) * 10
+                )
+              )::integer AS "engagementScore"
+
+            FROM public.analytics_pageviews p
+
+            LEFT JOIN session_metrics sm
+              ON sm.session_id = p.session_id
+
+            WHERE
+              p.engagement_updated_at IS NOT NULL
+
+              AND (
+                $1::text = 'all'
+
+                OR (
+                  $1::text = 'today'
+                  AND p.viewed_at >=
+                    date_trunc(
+                      'day',
+                      now() AT TIME ZONE 'America/Sao_Paulo'
+                    ) AT TIME ZONE 'America/Sao_Paulo'
+                )
+
+                OR (
+                  $1::text = '7d'
+                  AND p.viewed_at >=
+                    now() - interval '7 days'
+                )
+
+                OR (
+                  $1::text = '30d'
+                  AND p.viewed_at >=
+                    now() - interval '30 days'
+                )
+              )
+          )
+
+          SELECT *
+          FROM ranked p
+          ORDER BY ${orderBy}
+          LIMIT $2
+          OFFSET $3;          `,
+          [
+            period,
+            limit + 1,
+            offset
+          ]
+        );
+
+        const hasMore =
+          rankingResult.rows.length > limit;
+
+        const items =
+          rankingResult.rows
+            .slice(0, limit)
+            .map((row) => ({
+            ...row,
+
+            id: Number(row.id),
+
+            activeTimeMs:
+              Number(row.activeTimeMs || 0),
+
+            maxScrollPercent:
+              Number(row.maxScrollPercent || 0),
+
+            viewportWidth:
+              row.viewportWidth === null
+                ? null
+                : Number(row.viewportWidth),
+
+            viewportHeight:
+              row.viewportHeight === null
+                ? null
+                : Number(row.viewportHeight),
+
+            devicePixelRatio:
+              row.devicePixelRatio === null
+                ? null
+                : Number(row.devicePixelRatio),
+
+            sessionPageviews:
+              Number(row.sessionPageviews || 1),
+
+            distinctPages:
+              Number(row.distinctPages || 1),
+
+            sessionNavigations:
+              Number(row.sessionNavigations || 0),
+
+            didScroll:
+              row.didScroll === true,
+
+            engagementScore:
+              Number(row.engagementScore || 0)
+          }));
+
+        sendJson(
+          res,
+          200,
+          {
+            items,
+            hasMore,
+            nextBeforeId: null,
+            nextOffset:
+              hasMore
+                ? offset + limit
+                : null,
+            mode,
+            period
+          },
+          {
+            "Cache-Control": "no-store"
+          }
+        );
+
+        return;
+      }
+
+      const result = await pool.query(
+        `
+        SELECT
+          id,
+          viewed_at AS "viewedAt",
+          path,
+          referrer,
+          language,
+          timezone,
+          screen_width AS "screenWidth",
+          screen_height AS "screenHeight",
+          user_agent AS "userAgent",
+          country_code AS "countryCode",
+          region,
+          city,
+          visitor_id AS "visitorId",
+          session_id AS "sessionId",
+          navigation_type AS "navigationType",
+          active_time_ms AS "activeTimeMs",
+          max_scroll_percent AS "maxScrollPercent",
+          did_scroll AS "didScroll",
+          viewport_width AS "viewportWidth",
+          viewport_height AS "viewportHeight",
+          device_pixel_ratio AS "devicePixelRatio",
+          utm_source AS "utmSource",
+          utm_medium AS "utmMedium",
+          utm_campaign AS "utmCampaign",
+          utm_content AS "utmContent",
+          utm_term AS "utmTerm",
+          engagement_updated_at AS "engagementUpdatedAt"
+
+        FROM public.analytics_pageviews
+
+        WHERE (
+          $1::bigint IS NULL
+          OR id < $1::bigint
+        )
+
+        ORDER BY id DESC
+
+        LIMIT $2;
+        `,
+        [
+          beforeId,
+          limit + 1
+        ]
+      );
+
+      const hasMore = result.rows.length > limit;
+
+      const items = result.rows
+        .slice(0, limit)
+        .map((row) => ({
+          ...row,
+
+          id: Number(row.id),
+
+          activeTimeMs:
+            Number(row.activeTimeMs || 0),
+
+          maxScrollPercent:
+            Number(row.maxScrollPercent || 0),
+
+          viewportWidth:
+            row.viewportWidth === null
+              ? null
+              : Number(row.viewportWidth),
+
+          viewportHeight:
+            row.viewportHeight === null
+              ? null
+              : Number(row.viewportHeight),
+
+          devicePixelRatio:
+            row.devicePixelRatio === null
+              ? null
+              : Number(row.devicePixelRatio)
+        }));
+
+      const nextBeforeId =
+        hasMore && items.length
+          ? items[items.length - 1].id
+          : null;
+
+      sendJson(
+        res,
+        200,
+        {
+          items,
+          hasMore,
+          nextBeforeId
+        },
+        {
+          "Cache-Control": "no-store"
+        }
+      );
+    } catch (error) {
+      console.error(
+        "Analytics pageviews query failed:",
+        error
+      );
+
+      sendJson(res, 500, {
+        error: "analytics_pageviews_error"
+      });
+    }
+
+    return;
+  }
+
+
+  // ANALYTICS - resumo agregado para o painel privado
   if (req.method === "GET" && pathname === "/analytics/summary") {
     try {
       const result = await pool.query(`
-        SELECT
-          COUNT(*)::int AS "total",
-
-          COUNT(*) FILTER (
-            WHERE viewed_at >= (
+        WITH bounds AS (
+          SELECT
+            (
               date_trunc(
                 'day',
                 now() AT TIME ZONE 'America/Sao_Paulo'
               )
               AT TIME ZONE 'America/Sao_Paulo'
-            )
-          )::int AS "today",
+            ) AS today_start,
+            now() - interval '7 days' AS last7_start
+        )
+        SELECT
+          COUNT(*)::int AS "pageviewsTotal",
 
           COUNT(*) FILTER (
-            WHERE viewed_at >= now() - interval '7 days'
-          )::int AS "last7Days",
+            WHERE viewed_at >= (
+              SELECT today_start FROM bounds
+            )
+          )::int AS "pageviewsToday",
+
+          COUNT(*) FILTER (
+            WHERE viewed_at >= (
+              SELECT last7_start FROM bounds
+            )
+          )::int AS "pageviewsLast7Days",
+
+          COUNT(DISTINCT visitor_id) FILTER (
+            WHERE visitor_id IS NOT NULL
+          )::int AS "visitorsTotal",
+
+          COUNT(DISTINCT visitor_id) FILTER (
+            WHERE visitor_id IS NOT NULL
+              AND viewed_at >= (
+                SELECT today_start FROM bounds
+              )
+          )::int AS "visitorsToday",
+
+          COUNT(DISTINCT visitor_id) FILTER (
+            WHERE visitor_id IS NOT NULL
+              AND viewed_at >= (
+                SELECT last7_start FROM bounds
+              )
+          )::int AS "visitorsLast7Days",
+
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE session_id IS NOT NULL
+          )::int AS "sessionsTotal",
+
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE session_id IS NOT NULL
+              AND viewed_at >= (
+                SELECT today_start FROM bounds
+              )
+          )::int AS "sessionsToday",
+
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE session_id IS NOT NULL
+              AND viewed_at >= (
+                SELECT last7_start FROM bounds
+              )
+          )::int AS "sessionsLast7Days",
+
+          COUNT(*) FILTER (
+            WHERE navigation_type = 'reload'
+              AND viewed_at >= (
+                SELECT today_start FROM bounds
+              )
+          )::int AS "reloadsToday",
+
+          COUNT(*) FILTER (
+            WHERE navigation_type = 'reload'
+              AND viewed_at >= (
+                SELECT last7_start FROM bounds
+              )
+          )::int AS "reloadsLast7Days",
 
           COUNT(*) FILTER (
             WHERE path = '/'
-          )::int AS "home",
+          )::int AS "homeTotal",
+
+          COUNT(*) FILTER (
+            WHERE path = '/'
+              AND viewed_at >= (
+                SELECT today_start FROM bounds
+              )
+          )::int AS "homeToday",
 
           COUNT(*) FILTER (
             WHERE path = '/opslab/'
-          )::int AS "opslab"
+          )::int AS "opslabTotal",
+
+          COUNT(*) FILTER (
+            WHERE path = '/opslab/'
+              AND viewed_at >= (
+                SELECT today_start FROM bounds
+              )
+          )::int AS "opslabToday"
 
         FROM public.analytics_pageviews;
       `);
 
+      const row = result.rows[0];
+
       sendJson(
         res,
         200,
-        result.rows[0],
+        {
+          generatedAt: new Date().toISOString(),
+
+          pageviews: {
+            total: row.pageviewsTotal,
+            today: row.pageviewsToday,
+            last7Days: row.pageviewsLast7Days
+          },
+
+          visitors: {
+            total: row.visitorsTotal,
+            today: row.visitorsToday,
+            last7Days: row.visitorsLast7Days
+          },
+
+          sessions: {
+            total: row.sessionsTotal,
+            today: row.sessionsToday,
+            last7Days: row.sessionsLast7Days
+          },
+
+          navigation: {
+            reloadsToday: row.reloadsToday,
+            reloadsLast7Days: row.reloadsLast7Days
+          },
+
+          pages: {
+            home: {
+              total: row.homeTotal,
+              today: row.homeToday
+            },
+            opslab: {
+              total: row.opslabTotal,
+              today: row.opslabToday
+            }
+          }
+        },
         {
           "Cache-Control": "no-store"
         }
@@ -461,6 +1316,7 @@ const server = http.createServer(async (req, res) => {
 
     return;
   }
+
 
   if (pathname === "/monitoring/history" && req.method !== "GET") {
     sendJson(

@@ -1019,9 +1019,11 @@ Também foi reforçado o princípio de **fail-open para telemetria**: se o analy
 
 ---
 
-# 15 — Domínio e Marcos Lab
+# 15 — Domínio, HTTPS e Marcos Lab
 
-**Status:** Concluído para publicação HTTP
+**Status:** Concluído para publicação HTTPS
+
+A publicação pública também utiliza **HTTPS/TLS**, com certificado emitido pelo **Let's Encrypt** e gerenciado pelo **Certbot**. Requisições HTTP são redirecionadas permanentemente para HTTPS pelo Nginx.
 
 Durante a evolução do projeto foi criado um novo ambiente e o domínio pessoal passou a apontar para a VPS.
 
@@ -1587,7 +1589,6 @@ Significa que o objetivo original — compreender e operar uma infraestrutura Li
 
 As seguintes tecnologias e práticas podem ser estudadas futuramente, mas **não devem ser interpretadas como já implementadas**:
 
-* HTTPS;
 * estratégia formal de backup;
 * teste completo de restore;
 * CI/CD;

@@ -1,2780 +1,2249 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>OpsLab | Linux Cloud Lab</title>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg: #050816;
-            --bg-secondary: #0a1020;
-            --card: rgba(15, 23, 42, 0.72);
-            --border: rgba(148, 163, 184, 0.15);
-            --text: #e5e7eb;
-            --muted: #94a3b8;
-            --green: #4ade80;
-            --blue: #38bdf8;
-            --purple: #a78bfa;
-            --red: #fb7185;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            min-height: 100vh;
-            background:
-                radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 30%),
-                radial-gradient(circle at 80% 70%, rgba(167, 139, 250, 0.08), transparent 30%),
-                var(--bg);
-
-            color: var(--text);
-            font-family: Inter, Arial, Helvetica, sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* GRID DE FUNDO */
-
-        body::before {
-            content: "";
-            position: fixed;
-            inset: 0;
-
-            background-image:
-                linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-
-            background-size: 45px 45px;
-
-            mask-image: linear-gradient(
-                to bottom,
-                rgba(0,0,0,.8),
-                transparent
-            );
-
-            pointer-events: none;
-        }
-
-        /* LUZES FLUTUANTES */
-
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(90px);
-            opacity: .18;
-            pointer-events: none;
-            animation: float 10s ease-in-out infinite alternate;
-        }
-
-        .orb-1 {
-            width: 350px;
-            height: 350px;
-            background: var(--blue);
-            top: -120px;
-            left: -100px;
-        }
-
-        .orb-2 {
-            width: 400px;
-            height: 400px;
-            background: var(--purple);
-            right: -150px;
-            bottom: -120px;
-            animation-delay: 2s;
-        }
-
-        @keyframes float {
-            from {
-                transform: translate(0, 0) scale(1);
-            }
-
-            to {
-                transform: translate(40px, 30px) scale(1.1);
-            }
-        }
-
-        /* CONTAINER */
-
-        .container {
-            width: min(1120px, 90%);
-            margin: auto;
-        }
-
-        /* HEADER */
-
-        header {
-            height: 80px;
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid var(--border);
-        }
-
-        nav {
-            width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .logo {
-            font-weight: 800;
-            font-size: 1.25rem;
-            letter-spacing: -.5px;
-        }
-
-        .logo span {
-            color: var(--green);
-        }
-
-        .status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-
-            padding: 8px 13px;
-            border-radius: 999px;
-
-            border: 1px solid rgba(148, 163, 184, .2);
-            background: rgba(148, 163, 184, .06);
-
-            color: #cbd5e1;
-            font-size: .85rem;
-            transition: .25s ease;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--muted);
-            box-shadow: 0 0 12px var(--muted);
-
-            animation: pulse 1.7s infinite;
-        }
-
-        @keyframes pulse {
-            50% {
-                opacity: .35;
-                transform: scale(.8);
-            }
-        }
-
-        .status[data-state="success"] {
-            border-color: rgba(74, 222, 128, .2);
-            background: rgba(74, 222, 128, .06);
-            color: #bbf7d0;
-        }
-
-        .status[data-state="success"] .status-dot {
-            background: var(--green);
-            box-shadow: 0 0 12px var(--green);
-        }
-
-        .status[data-state="error"] {
-            border-color: rgba(251, 113, 133, .24);
-            background: rgba(251, 113, 133, .07);
-            color: #fecdd3;
-        }
-
-        .status[data-state="error"] .status-dot {
-            background: var(--red);
-            box-shadow: 0 0 12px var(--red);
-            animation: none;
-        }
-
-        /* HERO */
-
-        .hero {
-            min-height: calc(100vh - 80px);
-
-            display: grid;
-            grid-template-columns: 1.1fr .9fr;
-            align-items: center;
-            gap: 70px;
-
-            padding: 80px 0;
-        }
-
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-
-            color: var(--blue);
-            font-size: .85rem;
-            font-weight: 600;
-
-            border: 1px solid rgba(56, 189, 248, .18);
-            background: rgba(56, 189, 248, .05);
-
-            padding: 8px 12px;
-            border-radius: 999px;
-
-            margin-bottom: 25px;
-        }
-
-        h1 {
-            font-size: clamp(3rem, 7vw, 6rem);
-            line-height: .95;
-            letter-spacing: -4px;
-
-            margin-bottom: 25px;
-        }
-
-        h1 .gradient {
-            background: linear-gradient(
-                90deg,
-                var(--green),
-                var(--blue),
-                var(--purple)
-            );
-
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .description {
-            max-width: 650px;
-            color: var(--muted);
-            font-size: 1.1rem;
-            line-height: 1.8;
-        }
-
-        .description strong {
-            color: var(--text);
-        }
-
-        .tech-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 30px;
-        }
-
-        .tech {
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,.025);
-            color: #cbd5e1;
-            font-size: .8rem;
-        }
-
-        /* TERMINAL */
-
-        .terminal {
-            position: relative;
-            border: 1px solid var(--border);
-            background: rgba(2, 6, 23, .82);
-
-            border-radius: 15px;
-            overflow: hidden;
-
-            box-shadow:
-                0 30px 80px rgba(0, 0, 0, .4),
-                0 0 80px rgba(56, 189, 248, .04);
-
-            animation: terminalEnter .9s ease forwards;
-        }
-
-        @keyframes terminalEnter {
-            from {
-                opacity: 0;
-                transform: translateY(25px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .terminal-header {
-            height: 48px;
-            display: flex;
-            align-items: center;
-            gap: 7px;
-
-            padding: 0 16px;
-            border-bottom: 1px solid var(--border);
-
-            background: rgba(255,255,255,.02);
-        }
-
-        .circle {
-            width: 11px;
-            height: 11px;
-            border-radius: 50%;
-        }
-
-        .red {
-            background: #fb7185;
-        }
-
-        .yellow {
-            background: #facc15;
-        }
-
-        .green {
-            background: #4ade80;
-        }
-
-        .terminal-title {
-            margin-left: 10px;
-            color: #64748b;
-            font-size: .75rem;
-        }
-
-        .terminal-body {
-            padding: 25px;
-            min-height: 320px;
-
-            font-family: Consolas, Monaco, monospace;
-            font-size: .88rem;
-            line-height: 1.9;
-        }
-
-        .prompt {
-            color: var(--green);
-        }
-
-        .command {
-            color: #e2e8f0;
-        }
-
-        .output {
-            color: #64748b;
-        }
-
-        .success {
-            color: var(--green);
-        }
-
-        .blue {
-            color: var(--blue);
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 16px;
-            background: var(--green);
-
-            vertical-align: middle;
-            margin-left: 4px;
-
-            animation: blink .8s infinite;
-        }
-
-        @keyframes blink {
-            50% {
-                opacity: 0;
-            }
-        }
-
-        /* CARDS */
-
-        .infra {
-            padding: 40px 0 100px;
-        }
-
-        .section-title {
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-size: .75rem;
-            margin-bottom: 20px;
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-        }
-
-        .card {
-            border: 1px solid var(--border);
-            background: var(--card);
-            backdrop-filter: blur(10px);
-
-            padding: 22px;
-            border-radius: 12px;
-
-            transition: .25s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(56, 189, 248, .35);
-        }
-
-        .card-label {
-            color: #64748b;
-            font-size: .72rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 9px;
-        }
-
-        .card-value {
-            font-weight: 700;
-            font-size: 1rem;
-            overflow-wrap: anywhere;
-        }
-
-        .online {
-            color: var(--green);
-        }
-
-        .configured {
-            color: #c4b5fd;
-        }
-
-
-        /* INFRAESTRUTURA · REDESIGN */
-
-        .infra-redesign {
-            padding: 40px 0 100px;
-        }
-
-        .infra-redesign .infra-redesign-eyebrow {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 18px;
-            color: #78a7e8;
-            font-size: .68rem;
-            letter-spacing: .19em;
-            text-transform: uppercase;
-        }
-
-        .infra-redesign .infra-redesign-eyebrow::before {
-            content: "";
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 16px rgba(74, 222, 128, .8);
-        }
-
-        .infra-redesign-heading {
-            display: flex;
-            align-items: end;
-            justify-content: space-between;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .infra-redesign-heading h2 {
-            margin: 0;
-            font-size: clamp(1.8rem, 4vw, 2.35rem);
-            line-height: 1.15;
-            letter-spacing: -1.5px;
-        }
-
-        .infra-redesign-subtitle {
-            margin-top: 8px;
-            color: var(--muted);
-            font-size: .82rem;
-        }
-
-        .infra-redesign-refresh {
-            color: #64748b;
-            font-size: .72rem;
-            white-space: nowrap;
-        }
-
-        .infra-redesign-refresh strong {
-            color: #93a6ca;
-            font-weight: 500;
-        }
-
-        .infra-status-panel {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-            overflow: hidden;
-            margin-bottom: 15px;
-            padding: 20px 22px;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            background: linear-gradient(
-                135deg,
-                rgba(15, 23, 42, .78),
-                rgba(8, 14, 28, .84)
-            );
-            box-shadow: 0 16px 50px rgba(0, 0, 0, .16);
-            transition: border-color .25s ease, background .25s ease;
-        }
-
-        .infra-status-panel::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -30%;
-            width: 24%;
-            height: 1px;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                var(--green),
-                transparent
-            );
-            opacity: .7;
-            animation: infraScan 5s linear infinite;
-        }
-
-        .infra-status-panel[data-state="error"] {
-            border-color: rgba(251, 113, 133, .28);
-        }
-
-        .infra-status-panel[data-state="error"]::after {
-            background: linear-gradient(
-                90deg,
-                transparent,
-                var(--red),
-                transparent
-            );
-        }
-
-        @keyframes infraScan {
-            to {
-                left: 110%;
-            }
-        }
-
-        .infra-status-main {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            min-width: 0;
-        }
-
-        .infra-live-orb {
-            flex: 0 0 auto;
-            width: 11px;
-            height: 11px;
-            border-radius: 50%;
-            background: var(--muted);
-            box-shadow: 0 0 0 0 rgba(148, 163, 184, .22);
-            animation: infraPulse 2.4s infinite;
-            transition: background .2s ease;
-        }
-
-        .infra-status-panel[data-state="success"] .infra-live-orb {
-            background: var(--green);
-        }
-
-        .infra-status-panel[data-state="error"] .infra-live-orb {
-            background: var(--red);
-            animation: none;
-        }
-
-        @keyframes infraPulse {
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 rgba(74, 222, 128, .28);
-            }
-
-            50% {
-                box-shadow: 0 0 0 8px rgba(74, 222, 128, 0);
-            }
-        }
-
-        .infra-status-title {
-            font-size: .88rem;
-            font-weight: 700;
-        }
-
-        .infra-status-copy {
-            margin-top: 4px;
-            color: var(--muted);
-            font-size: .75rem;
-            line-height: 1.45;
-        }
-
-        .infra-checks {
-            display: flex;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .infra-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 7px 10px;
-            border: 1px solid rgba(148, 163, 184, .16);
-            border-radius: 999px;
-            background: rgba(148, 163, 184, .04);
-            color: #cbd5e1;
-            font-size: .68rem;
-            white-space: nowrap;
-            transition: border-color .2s ease, color .2s ease, background .2s ease;
-        }
-
-        .infra-chip::before {
-            content: "";
-            width: 5px;
-            height: 5px;
-            border-radius: 50%;
-            background: var(--muted);
-        }
-
-        .infra-chip[data-state="success"] {
-            border-color: rgba(74, 222, 128, .18);
-            background: rgba(74, 222, 128, .035);
-            color: #bbf7d0;
-        }
-
-        .infra-chip[data-state="success"]::before {
-            background: var(--green);
-        }
-
-        .infra-chip[data-state="error"] {
-            border-color: rgba(251, 113, 133, .2);
-            background: rgba(251, 113, 133, .045);
-            color: #fecdd3;
-        }
-
-        .infra-chip[data-state="error"]::before {
-            background: var(--red);
-        }
-
-        .infra-metrics {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin: 15px 0;
-        }
-
-        .infra-metric {
-            position: relative;
-            min-width: 0;
-            min-height: 138px;
-            overflow: hidden;
-            padding: 17px 18px 15px;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            background: rgba(15, 23, 42, .72);
-            backdrop-filter: blur(10px);
-            transition:
-                transform .28s ease,
-                border-color .28s ease,
-                background .28s ease;
-        }
-
-        .infra-metric:hover {
-            transform: translateY(-2px);
-            border-color: rgba(56, 189, 248, .35);
-        }
-
-        .infra-metric.is-refreshing {
-            border-color: rgba(56, 189, 248, .55);
-            background: rgba(15, 24, 44, .92);
-        }
-
-        .infra-metric.is-refreshing::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                100deg,
-                transparent 25%,
-                rgba(56, 189, 248, .065) 48%,
-                transparent 70%
-            );
-            transform: translateX(-100%);
-            animation: infraSweep .8s ease;
-            pointer-events: none;
-        }
-
-        @keyframes infraSweep {
-            to {
-                transform: translateX(100%);
-            }
-        }
-
-        .infra-metric-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-bottom: 23px;
-        }
-
-        .infra-metric-label {
-            color: #71829f;
-            font-size: .64rem;
-            letter-spacing: .1em;
-            text-transform: uppercase;
-        }
-
-        .infra-metric-symbol {
-            color: #5976a5;
-            font-size: .75rem;
-        }
-
-        .infra-metric-value {
-            color: var(--text);
-            font-size: clamp(1.45rem, 2.6vw, 1.72rem);
-            line-height: 1;
-            font-weight: 700;
-            letter-spacing: -.045em;
-            overflow-wrap: anywhere;
-        }
-
-        .infra-metric-unit {
-            margin-left: 4px;
-            color: #8291ad;
-            font-size: .75rem;
-            font-weight: 500;
-        }
-
-        .infra-metric-foot {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            margin-top: 16px;
-            color: #64738e;
-            font-size: .65rem;
-        }
-
-        .infra-metric-ok {
-            flex: 0 0 auto;
-            color: var(--green);
-        }
-
-        .infra-mini-track {
-            flex: 0 0 auto;
-            width: 58px;
-            height: 3px;
-            overflow: hidden;
-            border-radius: 999px;
-            background: #182237;
-        }
-
-        .infra-mini-track span {
-            display: block;
-            width: 0;
-            height: 100%;
-            border-radius: inherit;
-            background: linear-gradient(90deg, var(--blue), var(--purple));
-            transition: width .5s ease;
-        }
-
-        .infra-components {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            overflow: hidden;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            background: rgba(2, 6, 23, .46);
-        }
-
-        .infra-component {
-            min-width: 0;
-            min-height: 84px;
-            padding: 15px 16px;
-            border-right: 1px solid var(--border);
-        }
-
-        .infra-component:last-child {
-            border-right: 0;
-        }
-
-        .infra-component-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .infra-component-name {
-            font-size: .76rem;
-            font-weight: 700;
-        }
-
-        .infra-component-state {
-            flex: 0 0 auto;
-            color: var(--muted);
-            font-size: .58rem;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-        }
-
-        .infra-component-state[data-state="success"] {
-            color: var(--green);
-        }
-
-        .infra-component-state[data-state="error"] {
-            color: var(--red);
-        }
-
-        .infra-component-copy {
-            margin-top: 8px;
-            color: #697993;
-            font-size: .64rem;
-            line-height: 1.45;
-        }
-
-        .infra-environment {
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 9px;
-            margin-top: 13px;
-            padding: 11px 2px 0;
-            color: #5f708d;
-            font-size: .65rem;
-        }
-
-        .infra-environment strong {
-            color: #8295b7;
-            font-weight: 500;
-        }
-
-        .infra-environment-dot {
-            color: #32405a;
-        }
-
-        /* LIVE STATUS */
-
-        .live-status {
-            padding: 20px 0 70px;
-        }
-
-        .section-heading {
-            display: flex;
-            align-items: end;
-            justify-content: space-between;
-            gap: 30px;
-            margin-bottom: 24px;
-        }
-
-        .section-heading h2 {
-            margin-top: 8px;
-            font-size: clamp(1.8rem, 4vw, 2.8rem);
-            letter-spacing: -1.5px;
-        }
-
-        .section-description {
-            max-width: 650px;
-            margin-top: 10px;
-            color: var(--muted);
-            line-height: 1.7;
-        }
-
-        .refresh-button {
-            min-width: 148px;
-            border: 1px solid rgba(56, 189, 248, .3);
-            border-radius: 10px;
-            padding: 11px 16px;
-            background: rgba(56, 189, 248, .08);
-            color: #bae6fd;
-            font: inherit;
-            font-size: .85rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: .2s ease;
-        }
-
-        .refresh-button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            border-color: rgba(56, 189, 248, .55);
-            background: rgba(56, 189, 248, .13);
-        }
-
-        .refresh-button:focus-visible {
-            outline: 2px solid var(--blue);
-            outline-offset: 3px;
-        }
-
-        .refresh-button:disabled {
-            cursor: wait;
-            opacity: .6;
-        }
-
-        .live-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-
-        .live-card {
-            --state-color: var(--blue);
-            position: relative;
-            min-height: 168px;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 22px;
-            background: rgba(15, 23, 42, .62);
-            overflow: hidden;
-        }
-
-        .live-card::after {
-            content: "";
-            position: absolute;
-            width: 110px;
-            height: 110px;
-            right: -55px;
-            bottom: -55px;
-            border-radius: 50%;
-            background: var(--state-color);
-            filter: blur(45px);
-            opacity: .12;
-        }
-
-        .live-card[data-state="success"] {
-            --state-color: var(--green);
-            border-color: rgba(74, 222, 128, .2);
-        }
-
-        .live-card[data-state="error"] {
-            --state-color: var(--red);
-            border-color: rgba(251, 113, 133, .22);
-        }
-
-        .live-card-header,
-        .services-header,
-        .service-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        .live-card-header {
-            margin-bottom: 25px;
-        }
-
-        .endpoint,
-        .services-count,
-        .service-meta,
-        .update-meta {
-            color: #64748b;
-            font-size: .75rem;
-        }
-
-        .endpoint {
-            font-family: Consolas, Monaco, monospace;
-        }
-
-        .state-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            border-radius: 999px;
-            padding: 6px 9px;
-            background: rgba(148, 163, 184, .08);
-            color: #cbd5e1;
-            font-size: .72rem;
-            font-weight: 700;
-        }
-
-        .state-badge::before {
-            content: "";
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--state-color);
-        }
-
-        .live-card h3 {
-            margin-bottom: 9px;
-            font-size: 1.15rem;
-        }
-
-        .live-detail {
-            color: var(--muted);
-            line-height: 1.55;
-            font-size: .9rem;
-        }
-
-        .update-meta {
-            margin-top: 15px;
-            text-align: right;
-        }
-
-        .services-panel {
-            margin-top: 15px;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            background: rgba(2, 6, 23, .56);
-            overflow: hidden;
-        }
-
-        .services-header {
-            padding: 18px 22px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .services-header h3 {
-            font-size: 1rem;
-        }
-
-        .services-list {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1px;
-            background: var(--border);
-        }
-
-        .service-item,
-        .services-message {
-            background: #070b18;
-            padding: 18px 22px;
-        }
-
-        .service-name {
-            font-weight: 700;
-        }
-
-        .service-meta {
-            margin-top: 5px;
-        }
-
-        .service-state {
-            flex: 0 0 auto;
-            border: 1px solid rgba(56, 189, 248, .18);
-            border-radius: 999px;
-            padding: 5px 9px;
-            color: #bae6fd;
-            font-size: .72rem;
-        }
-
-        .services-message {
-            grid-column: 1 / -1;
-            min-height: 82px;
-            display: grid;
-            place-items: center;
-            color: var(--muted);
-            text-align: center;
-        }
-
-        .services-message[data-state="error"] {
-            color: #fecdd3;
-        }
-
-        .auto-refresh-meta {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            flex-wrap: wrap;
-            gap: 8px 16px;
-            margin-top: 15px;
-            color: #64748b;
-            font-size: .75rem;
-        }
-
-        .auto-refresh-state {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            color: #bbf7d0;
-        }
-
-        .auto-refresh-state::before {
-            content: "";
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 10px rgba(74, 222, 128, .55);
-        }
-
-        .auto-refresh-state[data-state="paused"] {
-            color: #cbd5e1;
-        }
-
-        .auto-refresh-state[data-state="paused"]::before {
-            background: var(--muted);
-            box-shadow: none;
-        }
-
-        .history {
-            padding: 0 0 100px;
-        }
-
-        .history-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-            margin-bottom: 18px;
-        }
-
-        .history-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .history-filter {
-            border: 1px solid var(--border);
-            border-radius: 999px;
-            padding: 8px 13px;
-            background: rgba(15, 23, 42, .7);
-            color: var(--muted);
-            font: inherit;
-            font-size: .78rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .history-filter:hover,
-        .history-filter:focus-visible {
-            border-color: rgba(56, 189, 248, .45);
-            color: #bae6fd;
-        }
-
-        .history-filter:focus-visible {
-            outline: 2px solid var(--blue);
-            outline-offset: 2px;
-        }
-
-        .history-filter[aria-pressed="true"] {
-            border-color: rgba(56, 189, 248, .45);
-            background: rgba(56, 189, 248, .12);
-            color: #bae6fd;
-        }
-
-        .history-state {
-            min-height: 58px;
-            display: flex;
-            align-items: center;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px 18px;
-            background: rgba(2, 6, 23, .5);
-            color: var(--muted);
-            line-height: 1.5;
-            font-size: .85rem;
-        }
-
-        .history-state[data-state="success"] {
-            border-color: rgba(74, 222, 128, .2);
-            color: #bbf7d0;
-        }
-
-        .history-state[data-state="unavailable"],
-        .history-state[data-state="error"] {
-            border-color: rgba(251, 113, 133, .22);
-            color: #fecdd3;
-        }
-
-        .history-charts {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .history-chart-card {
-            min-width: 0;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 18px;
-            background: rgba(15, 23, 42, .62);
-        }
-
-        .history-chart-header {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 14px;
-        }
-
-        .history-chart-header h3 {
-            font-size: .9rem;
-        }
-
-        .history-chart-value {
-            color: #cbd5e1;
-            font-size: .78rem;
-            font-weight: 700;
-        }
-
-        .history-canvas {
-            display: block;
-            width: 100%;
-            height: 180px;
-        }
-
-        .history-note {
-            margin-top: 12px;
-            color: #64748b;
-            font-size: .75rem;
-            line-height: 1.5;
-        }
-
-        footer {
-            border-top: 1px solid var(--border);
-            padding: 25px 0;
-            color: #475569;
-            font-size: .8rem;
-            text-align: center;
-        }
-
-        /* RESPONSIVO */
-
-        @media (max-width: 850px) {
-            .hero {
-                grid-template-columns: 1fr;
-                gap: 50px;
-            }
-
-            h1 {
-                letter-spacing: -2px;
-            }
-
-            .cards {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .section-heading {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .live-grid,
-            .services-list,
-            .history-charts {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 500px) {
-            .cards {
-                grid-template-columns: 1fr;
-            }
-
-            .status {
-                font-size: .7rem;
-            }
-
-            .terminal-body {
-                font-size: .73rem;
-            }
-
-            .refresh-button {
-                width: 100%;
-            }
-
-            .services-header,
-            .service-item,
-            .history-toolbar {
-                align-items: flex-start;
-            }
-
-            .history-toolbar {
-                flex-direction: column;
-            }
-        }
-
-
-        @media (max-width: 900px) {
-            .infra-metrics {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .infra-components {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .infra-component:nth-child(2) {
-                border-right: 0;
-            }
-
-            .infra-component:nth-child(-n+2) {
-                border-bottom: 1px solid var(--border);
-            }
-        }
-
-        @media (max-width: 620px) {
-            .infra-redesign-heading {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .infra-status-panel {
-                align-items: flex-start;
-                flex-direction: column;
-            }
-
-            .infra-checks {
-                justify-content: flex-start;
-            }
-
-            .infra-metrics {
-                grid-template-columns: 1fr;
-            }
-
-            .infra-components {
-                grid-template-columns: 1fr;
-            }
-
-            .infra-component {
-                border-right: 0;
-                border-bottom: 1px solid var(--border);
-            }
-
-            .infra-component:nth-child(-n+2) {
-                border-bottom: 1px solid var(--border);
-            }
-
-            .infra-component:last-child {
-                border-bottom: 0;
-            }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            *,
-            *::before,
-            *::after {
-                scroll-behavior: auto !important;
-                animation-duration: .01ms !important;
-                animation-iteration-count: 1 !important;
-                transition-duration: .01ms !important;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>OpsLab | Cloud Infrastructure Lab</title>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #05070d;
+      --bg-2: #080c14;
+      --panel: rgba(12, 18, 29, .78);
+      --panel-strong: rgba(10, 15, 25, .94);
+      --line: rgba(139, 158, 186, .14);
+      --line-strong: rgba(139, 158, 186, .24);
+      --text: #eef3f8;
+      --muted: #8b99ad;
+      --muted-2: #59677d;
+      --cyan: #55d6ff;
+      --green: #62e6a7;
+      --violet: #9f8cff;
+      --red: #ff6f86;
+      --amber: #f6c76a;
+      --radius: 18px;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body { zoom: 1.15; }
+
+    body {
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 12% -5%, rgba(85, 214, 255, .10), transparent 26rem),
+        radial-gradient(circle at 88% 8%, rgba(159, 140, 255, .08), transparent 30rem),
+        linear-gradient(180deg, #05070d 0%, #070b12 46%, #05070d 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, #000 0, rgba(0,0,0,.68) 36%, transparent 88%);
+      opacity: .72;
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: linear-gradient(90deg, transparent, rgba(85,214,255,.012), transparent);
+      transform: translateX(-100%);
+      animation: pageScan 12s linear infinite;
+    }
+
+    @keyframes pageScan { to { transform: translateX(100%); } }
+
+    button, input, select { font: inherit; }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1240px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .topbar-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line);
+      background: rgba(5, 7, 13, .80);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      min-height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brandline {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 14px;
+    }
+
+    .brand {
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      white-space: nowrap;
+    }
+
+    .brand strong { color: var(--green); }
+
+    .crumb {
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: .72rem;
+      white-space: nowrap;
+    }
+
+    .top-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: #bfd0df;
+      font-family: var(--mono);
+      font-size: .72rem;
+      white-space: nowrap;
+    }
+
+    .live-dot,
+    .tiny-dot {
+      display: inline-block;
+      border-radius: 50%;
+      background: var(--muted-2);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      box-shadow: 0 0 0 0 rgba(98,230,167,.3);
+      animation: pulse 2.2s infinite;
+    }
+
+    .top-status[data-state="success"] .live-dot {
+      background: var(--green);
+    }
+
+    .top-status[data-state="error"] .live-dot {
+      background: var(--red);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(98,230,167,.22); }
+      50% { box-shadow: 0 0 0 7px rgba(98,230,167,0); }
+    }
+
+    .hero {
+      min-height: 670px;
+      padding: 88px 0 72px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(430px, .95fr);
+      gap: 64px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: .7rem;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 14px rgba(98,230,167,.8);
+    }
+
+    .hero h1 {
+      max-width: 760px;
+      font-size: clamp(3.7rem, 7.2vw, 7.2rem);
+      line-height: .88;
+      letter-spacing: -.075em;
+      font-weight: 740;
+    }
+
+    .hero h1 span {
+      display: block;
+      color: transparent;
+      background: linear-gradient(90deg, #d8fff1 0%, var(--cyan) 48%, var(--violet) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .hero-copy {
+      max-width: 640px;
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    .stack {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .stack span {
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #aab8ca;
+      background: rgba(255,255,255,.018);
+      font-family: var(--mono);
+      font-size: .68rem;
+    }
+
+    .hero-note {
+      margin-top: 28px;
+      padding-left: 14px;
+      border-left: 1px solid rgba(85,214,255,.28);
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: .68rem;
+      line-height: 1.8;
+    }
+
+    .terminal {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line-strong);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(11,16,26,.96), rgba(5,9,15,.94));
+      box-shadow: 0 34px 100px rgba(0,0,0,.36);
+      transform-style: preserve-3d;
+      transform-origin: center center;
+      will-change: transform, box-shadow, border-color;
+      transition:
+        transform .22s ease-out,
+        border-color .28s ease,
+        box-shadow .28s ease;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .terminal:hover {
+        border-color: rgba(85,214,255,.58);
+        box-shadow:
+          0 40px 110px rgba(0,0,0,.42),
+          0 0 0 1px rgba(85,214,255,.16),
+          0 0 34px rgba(85,214,255,.18);
+      }
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .check:hover,
+      .metric:hover,
+      .component:hover,
+      .chart-card:hover {
+        background: linear-gradient(180deg, rgba(10,18,30,.72), rgba(7,12,20,.42));
+        box-shadow:
+          inset 0 0 0 1px rgba(85,214,255,.22),
+          0 0 0 1px rgba(85,214,255,.1),
+          0 0 22px rgba(85,214,255,.14);
+        transform: translateY(-2px);
+        z-index: 1;
+      }
+    }
+
+    .terminal::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(120deg, rgba(85,214,255,.045), transparent 36%, transparent 70%, rgba(159,140,255,.035));
+    }
+
+    .terminal-head {
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--line);
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: .67rem;
+    }
+
+    .term-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #374151;
+    }
+
+    .term-dot:nth-child(1) { background: #ff7189; }
+    .term-dot:nth-child(2) { background: #f3c566; }
+    .term-dot:nth-child(3) { background: #65d69a; }
+
+    .terminal-title { margin-left: 8px; }
+
+    .terminal-body {
+      position: relative;
+      padding: 25px 24px 28px;
+      min-height: 370px;
+      font-family: var(--mono);
+      font-size: .76rem;
+      line-height: 1.86;
+    }
+
+    .prompt { color: var(--green); }
+    .cmd { color: #d9e2ec; }
+    .output { color: #738198; }
+    .ok { color: var(--green); }
+    .cyan { color: var(--cyan); }
+
+    .term-gap { height: 15px; }
+
+    .cursor {
+      display: inline-block;
+      width: 7px;
+      height: 14px;
+      margin-left: 4px;
+      vertical-align: -2px;
+      background: var(--green);
+      animation: blink .85s steps(1) infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .section {
+      padding: 54px 0 90px;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 34px;
+      margin-bottom: 24px;
+    }
+
+    .section-kicker {
+      color: #6f86a4;
+      font-family: var(--mono);
+      font-size: .67rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      margin-bottom: 9px;
+    }
+
+    .section h2 {
+      font-size: clamp(1.85rem, 4vw, 3rem);
+      letter-spacing: -.045em;
+      line-height: 1.05;
+    }
+
+    .section-sub {
+      max-width: 700px;
+      margin-top: 10px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: .9rem;
+    }
+
+    .refresh-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 138px;
+      padding: 10px 14px;
+      border: 1px solid rgba(85,214,255,.24);
+      border-radius: 10px;
+      background: rgba(85,214,255,.055);
+      color: #bcefff;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: .68rem;
+      transition: .2s ease;
+    }
+
+    .refresh-btn:hover:not(:disabled) {
+      border-color: rgba(85,214,255,.55);
+      background: rgba(85,214,255,.09);
+    }
+
+    .refresh-btn:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    .checks {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(8,13,22,.72);
+    }
+
+    .checks-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    .check {
+      --state: var(--cyan);
+      position: relative;
+      min-height: 144px;
+      padding: 18px;
+      border-right: 1px solid var(--line);
+      transition: background .25s ease, box-shadow .25s ease, border-color .25s ease, transform .22s ease;
+    }
+
+    .check:last-child { border-right: 0; }
+
+    .check[data-state="success"] { --state: var(--green); }
+    .check[data-state="error"] { --state: var(--red); }
+
+    .check.is-refreshing {
+      background: rgba(85,214,255,.035);
+      box-shadow: inset 0 1px 0 rgba(85,214,255,.18);
+    }
+
+    .check.is-refreshing::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(100deg, transparent 20%, rgba(85,214,255,.07) 48%, transparent 76%);
+      transform: translateX(-110%);
+      animation: sweep .75s ease;
+    }
+
+    @keyframes sweep { to { transform: translateX(110%); } }
+
+    .check-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: .63rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #aab7c8;
+      font-size: .61rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .badge::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--state);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--state) 55%, transparent);
+    }
+
+    .check h3 {
+      margin-top: 31px;
+      font-size: .95rem;
+      letter-spacing: -.02em;
+    }
+
+    .check p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .76rem;
+      line-height: 1.5;
+    }
+
+    .telemetry-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      padding: 12px 15px;
+      border-top: 1px solid var(--line);
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: .64rem;
+    }
+
+    .telemetry-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #a9c9bb;
+    }
+
+    .telemetry-live::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(98,230,167,.65);
+    }
+
+    #refresh-countdown {
+      color: var(--green);
+    }
+
+    #last-updated {
+      color: var(--green);
+      text-shadow: 0 0 9px rgba(98,230,167,.28);
+    }
+
+    .infra-shell {
+      position: relative;
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background:
+        linear-gradient(145deg, rgba(15,22,34,.82), rgba(8,12,20,.90)),
+        rgba(8,12,20,.78);
+      box-shadow: 0 28px 80px rgba(0,0,0,.18);
+    }
+
+    .overall {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 26px;
+      padding: 18px 19px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(4,8,14,.55);
+    }
+
+    .overall::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -25%;
+      width: 20%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      opacity: .72;
+      animation: statusScan 5.3s linear infinite;
+    }
+
+    .overall[data-state="error"]::after {
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+    }
+
+    @keyframes statusScan { to { left: 110%; } }
+
+    .overall-main {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .overall-main .live-dot { flex: 0 0 auto; }
+
+    .overall[data-state="success"] .live-dot {
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(98,230,167,.55);
+    }
+
+    .overall[data-state="error"] .live-dot {
+      background: var(--red);
+      box-shadow: 0 0 12px rgba(255,111,134,.45);
+      animation: none;
+    }
+
+    .overall-title {
+      font-size: .82rem;
+      font-weight: 740;
+    }
+
+    .overall-copy {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: .7rem;
+    }
+
+    .service-chips {
+      display: flex;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .service-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #9eacbe;
+      background: rgba(255,255,255,.015);
+      font-family: var(--mono);
+      font-size: .61rem;
+      white-space: nowrap;
+    }
+
+    .service-chip .tiny-dot {
+      width: 5px;
+      height: 5px;
+      background: var(--muted-2);
+    }
+
+    .service-chip[data-state="success"] { color: #b7dacb; }
+    .service-chip[data-state="success"] .tiny-dot { background: var(--green); }
+    .service-chip[data-state="error"] { color: #ffc0ca; }
+    .service-chip[data-state="error"] .tiny-dot { background: var(--red); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      margin-top: 12px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(8,13,22,.72);
+    }
+
+    .metric {
+      position: relative;
+      min-width: 0;
+      min-height: 150px;
+      padding: 17px 17px 15px;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      overflow: hidden;
+      text-align: center;
+      transition: background .25s ease, box-shadow .25s ease, border-color .25s ease, transform .22s ease;
+    }
+
+    .metric:last-child { border-right: 0; }
+
+    .metric.is-refreshing {
+      background: rgba(85,214,255,.035);
+      box-shadow: inset 0 1px 0 rgba(85,214,255,.18);
+    }
+
+    .metric.is-refreshing::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(100deg, transparent 20%, rgba(85,214,255,.07) 48%, transparent 76%);
+      transform: translateX(-110%);
+      animation: sweep .75s ease;
+    }
+
+    .metric-label {
+      color: #6d7e96;
+      font-family: var(--mono);
+      font-size: .61rem;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      margin-top: 29px;
+      color: #f0f5fa;
+      font-size: clamp(1.65rem, 3vw, 2.15rem);
+      line-height: 1;
+      letter-spacing: -.05em;
+      font-weight: 720;
+      overflow-wrap: anywhere;
+    }
+
+    .metric-foot {
+      margin-top: 18px;
+      min-height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+      color: var(--muted-2);
+      font-size: .64rem;
+      text-align: center;
+    }
+
+    .metric-ok { color: var(--green); }
+
+    .mini-track {
+      width: 64px;
+      height: 3px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #182232;
+    }
+
+    .mini-track span {
+      display: block;
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--cyan), var(--violet));
+      transition: width .45s ease;
+    }
+
+    .topology {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(4,8,14,.46);
+    }
+
+    .topology::before {
+      content: "";
+      position: absolute;
+      left: 12.5%;
+      right: 12.5%;
+      top: 28px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(85,214,255,.14), rgba(159,140,255,.12), transparent);
+      pointer-events: none;
+    }
+
+    .component {
+      position: relative;
+      min-height: 112px;
+      padding: 17px;
+      border-right: 1px solid var(--line);
+      background: rgba(255,255,255,.006);
+      overflow: hidden;
+      transition: background .25s ease, box-shadow .25s ease, border-color .25s ease, transform .22s ease;
+    }
+
+    .component.is-refreshing {
+      background: rgba(85,214,255,.035);
+      box-shadow: inset 0 1px 0 rgba(85,214,255,.18);
+    }
+
+    .component.is-refreshing::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(100deg, transparent 20%, rgba(85,214,255,.07) 48%, transparent 76%);
+      transform: translateX(-110%);
+      animation: sweep .75s ease;
+    }
+
+    .component:last-child { border-right: 0; }
+
+    .component-node {
+      width: 7px;
+      height: 7px;
+      margin-bottom: 15px;
+      border: 1px solid var(--muted-2);
+      border-radius: 50%;
+      background: var(--muted-2);
+      box-shadow: none;
+    }
+
+    .component-node[data-state="success"] {
+      border-color: var(--green);
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(98,230,167,.55);
+    }
+
+    .component-node[data-state="error"] {
+      border-color: var(--red);
+      background: var(--red);
+      box-shadow: 0 0 12px rgba(255,111,134,.45);
+    }
+
+    .component-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .component-name {
+      font-size: .77rem;
+      font-weight: 730;
+    }
+
+    .component-state {
+      color: var(--muted-2);
+      font-family: var(--mono);
+      font-size: .56rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .component-state[data-state="success"] { color: var(--green); }
+    .component-state[data-state="error"] { color: var(--red); }
+
+    .component-copy {
+      margin-top: 8px;
+      color: #6f7e93;
+      font-size: .64rem;
+      line-height: 1.48;
+    }
+
+    .machine-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      flex-wrap: wrap;
+      gap: 9px;
+      padding: 13px 4px 0;
+      color: #59697f;
+      font-family: var(--mono);
+      font-size: .61rem;
+    }
+
+    .machine-line strong {
+      color: #8fa5bf;
+      font-weight: 500;
+    }
+
+    .sep { color: #2d394a; }
+
+
+    .history-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 13px;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .filter {
+      min-width: 48px;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.012);
+      color: var(--muted);
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: .62rem;
+    }
+
+    .filter[aria-pressed="true"] {
+      border-color: rgba(85,214,255,.38);
+      background: rgba(85,214,255,.07);
+      color: #c8f3ff;
+    }
+
+    .history-state {
+      padding: 12px 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(4,8,14,.44);
+      font-family: var(--mono);
+      font-size: .64rem;
+    }
+
+    .history-state[data-state="success"] {
+      border-color: rgba(98,230,167,.18);
+      color: #a9c9bb;
+    }
+
+    .history-state[data-state="error"],
+    .history-state[data-state="unavailable"] {
+      border-color: rgba(255,111,134,.20);
+      color: #f5b3bd;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(7,12,20,.58);
+    }
+
+    .chart-card {
+      position: relative;
+      min-width: 0;
+      min-height: 250px;
+      padding: 16px;
+      border-right: 1px solid var(--line);
+      background: transparent;
+      overflow: hidden;
+      transition:
+        background .25s ease,
+        box-shadow .25s ease,
+        border-color .25s ease,
+        transform .22s ease;
+      will-change: box-shadow, transform;
+    }
+
+    .chart-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(100deg, transparent 20%, rgba(85,214,255,.07) 48%, transparent 76%);
+      transform: translateX(-110%);
+      opacity: 0;
+      animation: historySweep 12s ease-in-out infinite;
+    }
+
+    .chart-card:nth-child(2)::after { animation-delay: 4s; }
+    .chart-card:nth-child(3)::after { animation-delay: 8s; }
+
+    @keyframes historySweep {
+      0%, 4% {
+        transform: translateX(-110%);
+        opacity: 0;
+      }
+      5% { opacity: 1; }
+      12% {
+        transform: translateX(110%);
+        opacity: 1;
+      }
+      13%, 100% {
+        transform: translateX(110%);
+        opacity: 0;
+      }
+    }
+
+    .chart-card:last-child { border-right: 0; }
+
+    .chart-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .chart-head h3 {
+      font-size: .77rem;
+      font-weight: 690;
+    }
+
+    .chart-value {
+      color: #cad6e4;
+      font-family: var(--mono);
+      font-size: .68rem;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 175px;
+    }
+
+
+    /* LINKS FINAIS — versão minimalista */
+    .explore-minimal {
+      padding: 34px 0 42px;
+    }
+
+    .explore-minimal-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .explore-minimal-label {
+      color: #6f86a4;
+      font-family: var(--mono);
+      font-size: .62rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .explore-minimal-links {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      gap: 10px 26px;
+    }
+
+    .explore-minimal-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #aab8ca;
+      text-decoration: none;
+      font-size: .74rem;
+      font-weight: 650;
+      letter-spacing: -.01em;
+      transition: color .2s ease;
+    }
+
+    .explore-minimal-link::after {
+      content: "↗";
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: .78rem;
+      transition: transform .2s ease;
+    }
+
+    .explore-minimal-link:hover {
+      color: #eef3f8;
+    }
+
+    .explore-minimal-link:hover::after {
+      transform: translate(2px, -2px);
+    }
+
+    .footer {
+      padding: 28px 0 36px;
+      border-top: 1px solid var(--line);
+      color: #45556d;
+      font-family: var(--mono);
+      font-size: .61rem;
+      text-align: center;
+      letter-spacing: .08em;
+    }
+
+    @media (max-width: 980px) {
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 42px;
+        padding-top: 70px;
+      }
+
+      .hero h1 { max-width: 900px; }
+      .terminal { max-width: 760px; }
+
+      .checks-grid { grid-template-columns: repeat(2, 1fr); }
+      .check:nth-child(2) { border-right: 0; }
+      .check:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .metric:nth-child(2) { border-right: 0; }
+      .metric:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .topology { grid-template-columns: repeat(2, 1fr); }
+      .component:nth-child(2) { border-right: 0; }
+      .component:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .topology::before { display: none; }
+
+      .charts { grid-template-columns: 1fr; }
+      .chart-card {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .chart-card:last-child { border-bottom: 0; }
+    }
+
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 26px, 1240px); }
+
+      .topbar { min-height: 60px; }
+      .crumb { display: none; }
+
+      .hero {
+        min-height: auto;
+        padding: 58px 0 52px;
+      }
+
+      .hero h1 {
+        font-size: clamp(3.1rem, 17vw, 5.2rem);
+        letter-spacing: -.07em;
+      }
+
+      .hero-copy { font-size: .92rem; }
+
+      .stack {
+        justify-content: center;
+      }
+
+      .terminal-body {
+        min-height: 320px;
+        padding: 20px 18px 23px;
+        font-size: .66rem;
+        overflow-x: auto;
+      }
+
+      .section { padding: 46px 0 70px; }
+
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .refresh-btn { width: 100%; }
+
+      .checks-grid { grid-template-columns: 1fr; }
+      .check {
+        min-height: 126px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .check:last-child { border-bottom: 0; }
+      .check h3 { margin-top: 24px; }
+
+      .telemetry-strip {
+        align-items: center;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .telemetry-strip > span {
+        width: 100%;
+        text-align: center;
+      }
+
+      .telemetry-live {
+        justify-content: center;
+      }
+
+      .infra-shell { padding: 12px; }
+
+      .overall {
+        align-items: center;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .overall-main {
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto;
+        justify-content: flex-start;
+        align-items: center;
+        text-align: left;
+      }
+
+      .overall-main > div {
+        text-align: left;
+      }
+
+      .service-chips {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .metrics { grid-template-columns: 1fr; }
+      .metric {
+        min-height: 136px;
+        padding-left: 24px;
+        padding-right: 24px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        text-align: center;
+      }
+      .metric-label,
+      .metric-value {
+        text-align: center;
+      }
+      .metric-foot {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px 24px;
+        text-align: center;
+      }
+      .metric:last-child { border-bottom: 0; }
+
+      .topology { grid-template-columns: 1fr; }
+      .component {
+        display: grid;
+        grid-template-columns: auto auto;
+        grid-template-areas:
+          "node state"
+          "name name"
+          "copy copy";
+        justify-content: center;
+        justify-items: center;
+        align-items: center;
+        column-gap: 4px;
+        row-gap: 9px;
+        padding: 20px 24px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        text-align: center;
+      }
+      .component:last-child { border-bottom: 0; }
+
+      .component-node {
+        grid-area: node;
+        margin: 0;
+        align-self: center;
+        justify-self: end;
+      }
+
+      .component-head {
+        display: contents;
+      }
+
+      .component-name {
+        grid-area: name;
+        margin-top: 3px;
+        text-align: center;
+      }
+
+      .component-state {
+        grid-area: state;
+        align-self: center;
+        justify-self: start;
+        text-align: left;
+      }
+
+      .component-copy {
+        grid-area: copy;
+        max-width: 280px;
+        margin-top: 0;
+        text-align: center;
+      }
+
+      .history-tools {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .filters { width: 100%; }
+      .filter { flex: 1; }
+
+      .chart-card { padding: 14px; }
+
+      .explore-minimal-inner {
+        align-items: center;
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+      }
+
+      .explore-minimal-label {
+        width: 100%;
+        text-align: center;
+      }
+
+      .explore-minimal-links {
+        width: 100%;
+        justify-content: center;
+      }
+
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="topbar-wrap">
+    <div class="shell topbar">
+      <div class="brandline">
+        <div class="brand">Ops<strong>Lab</strong></div>
+        <div class="crumb">Marcos Lab / experiments / opslab</div>
+      </div>
 
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
+      <div class="top-status" id="global-status" data-state="loading" role="status" aria-live="polite">
+        <span class="live-dot"></span>
+        <span id="global-status-label">verificando API</span>
+      </div>
+    </div>
+  </div>
 
-    <header>
-        <div class="container">
-            <nav>
-                <div class="logo">
-                    Ops<span>Lab</span>
-                </div>
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Cloud infrastructure lab</div>
 
-                <div class="status" id="global-api-status" data-state="loading" role="status" aria-live="polite">
-                    <div class="status-dot"></div>
-                    <span id="global-api-label">Verificando API...</span>
-                </div>
-            </nav>
+        <h1>
+          Infraestrutura
+          <span>em execução.</span>
+        </h1>
+
+        <p class="hero-copy">
+          Um laboratório prático de <strong>Linux, infraestrutura, redes, segurança e aplicações web</strong>
+          em uma VPS real. As leituras abaixo vêm dos serviços e componentes que sustentam o próprio OpsLab.
+        </p>
+
+        <div class="stack" aria-label="Tecnologias do laboratório">
+          <span>Ubuntu 24.04 LTS</span>
+          <span>DigitalOcean</span>
+          <span>Nginx</span>
+          <span>UFW</span>
+          <span>SSH</span>
         </div>
-    </header>
+      </div>
 
+      <div class="terminal" aria-label="Visão geral da infraestrutura em formato de terminal">
+        <div class="terminal-head">
+          <span class="term-dot"></span>
+          <span class="term-dot"></span>
+          <span class="term-dot"></span>
+          <span class="terminal-title">infrastructure overview</span>
+        </div>
 
-    <main class="container">
+        <div class="terminal-body">
+          <div><span class="prompt">marcos@opslab-01:~$</span> <span class="cmd">cat /etc/opslab/profile</span></div>
+          <div class="output">server=<span id="terminal-hostname">consultando</span></div>
+          <div class="output">environment=cloud</div>
 
-        <section class="hero">
+          <div class="term-gap"></div>
 
+          <div><span class="prompt">marcos@opslab-01:~$</span> <span class="cmd">show configured firewall</span></div>
+          <div class="ok">UFW · configured</div>
+
+          <div class="term-gap"></div>
+
+          <div><span class="prompt">marcos@opslab-01:~$</span> <span class="cmd">show configured proxy</span></div>
+          <div class="ok">Nginx · configured</div>
+
+          <div class="term-gap"></div>
+
+          <div><span class="prompt">marcos@opslab-01:~$</span> <span class="cmd">live checks</span></div>
+          <div class="cyan">↓ /api/health</div>
+          <div class="cyan">↓ /api/services</div>
+          <div class="cyan">↓ /api/system</div>
+          <div class="cyan">↓ /api/runtime</div>
+          <div class="cyan">↓ /api/monitoring/history</div>
+
+          <div class="term-gap"></div>
+
+          <div><span class="prompt">marcos@opslab-01:~$</span><span class="cursor"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <section class="section" aria-labelledby="checks-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Live checks</div>
+          <h2 id="checks-title">Estado da aplicação</h2>
+          <p class="section-sub">Leituras independentes da API, PostgreSQL, sistema operacional e runtime Node.js.</p>
+        </div>
+
+        <button class="refresh-btn" id="refresh-button" type="button">Atualizar dados</button>
+      </div>
+
+      <div class="checks">
+        <div class="checks-grid">
+          <article class="check" id="health-card" data-state="loading">
+            <div class="check-top">
+              <span>GET /api/health</span>
+              <span class="badge" id="health-badge">verificando</span>
+            </div>
+            <h3>API pública</h3>
+            <p id="health-detail">Consultando endpoint público...</p>
+          </article>
+
+          <article class="check" id="services-card" data-state="loading">
+            <div class="check-top">
+              <span>GET /api/services</span>
+              <span class="badge" id="services-badge">verificando</span>
+            </div>
+            <h3>Serviços no PostgreSQL</h3>
+            <p id="services-detail">Consultando serviço interno...</p>
+          </article>
+
+          <article class="check" id="system-card" data-state="loading">
+            <div class="check-top">
+              <span>GET /api/system</span>
+              <span class="badge" id="system-badge">verificando</span>
+            </div>
+            <h3>Sistema operacional</h3>
+            <p id="system-detail">Coletando métricas da VPS...</p>
+          </article>
+
+          <article class="check" id="runtime-card" data-state="loading">
+            <div class="check-top">
+              <span>GET /api/runtime</span>
+              <span class="badge" id="runtime-badge">verificando</span>
+            </div>
+            <h3>Runtime Node.js</h3>
+            <p id="runtime-detail">Consultando runtime...</p>
+          </article>
+        </div>
+
+        <div class="telemetry-strip">
+          <span class="telemetry-live" id="auto-refresh-label">Atualização automática ativa</span>
+          <span>Próxima leitura ao vivo em <strong id="refresh-countdown">15s</strong> · cards escalonados a cada 15s · histórico a cada 5min</span>
+          <span>Última atualização: <strong id="last-updated">aguardando</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <section class="section" aria-labelledby="infra-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Infraestrutura · live</div>
+          <h2 id="infra-title">Infraestrutura em operação</h2>
+          <p class="section-sub">Saúde da VPS e dos componentes essenciais do OpsLab.</p>
+        </div>
+      </div>
+
+      <div class="infra-shell">
+        <div class="overall" id="overall-panel" data-state="loading" role="status" aria-live="polite">
+          <div class="overall-main">
+            <span class="live-dot"></span>
             <div>
-                <div class="tag">
-                    ● CLOUD INFRASTRUCTURE LAB
-                </div>
-
-                <h1>
-                    Welcome to<br>
-                    <span class="gradient">OpsLab.</span>
-                </h1>
-
-                <p class="description">
-                    Um laboratório prático para explorar
-                    <strong>Linux, infraestrutura, redes, segurança e aplicações web</strong>
-                    em uma VPS real na nuvem.
-                </p>
-
-                <div class="tech-list">
-                    <div class="tech">Ubuntu 24.04 LTS</div>
-                    <div class="tech">DigitalOcean</div>
-                    <div class="tech">Nginx</div>
-                    <div class="tech">UFW</div>
-                    <div class="tech">SSH</div>
-                </div>
+              <div class="overall-title" id="overall-title">Verificando ambiente</div>
+              <div class="overall-copy" id="overall-copy">Consultando componentes...</div>
             </div>
+          </div>
 
+          <div class="service-chips">
+            <span class="service-chip" id="chip-api" data-state="loading"><span class="tiny-dot"></span>API verificando</span>
+            <span class="service-chip" id="chip-nginx" data-state="loading"><span class="tiny-dot"></span>Nginx verificando</span>
+            <span class="service-chip" id="chip-postgres" data-state="loading"><span class="tiny-dot"></span>PostgreSQL verificando</span>
+            <span class="service-chip" data-state="success"><span class="tiny-dot"></span>UFW ativo</span>
+          </div>
+        </div>
 
-            <div class="terminal">
-
-                <div class="terminal-header">
-                    <div class="circle red"></div>
-                    <div class="circle yellow"></div>
-                    <div class="circle green"></div>
-
-                    <div class="terminal-title">
-                        infrastructure overview
-                    </div>
-                </div>
-
-                <div class="terminal-body">
-
-                    <div>
-                        <span class="prompt">marcos@opslab-01:~$</span>
-                        <span class="command"> cat /etc/opslab/profile</span>
-                    </div>
-
-                    <div class="output">server=<span id="terminal-hostname">consultando</span></div>
-
-                    <br>
-
-                    <div>
-                        <span class="prompt">marcos@opslab-01:~$</span>
-                        <span class="command"> show configured firewall</span>
-                    </div>
-
-                    <div class="output">UFW · configured</div>
-
-                    <br>
-
-                    <div>
-                        <span class="prompt">marcos@opslab-01:~$</span>
-                        <span class="command"> show configured proxy</span>
-                    </div>
-
-                    <div class="output">Nginx · configured</div>
-
-                    <br>
-
-                    <div>
-                        <span class="prompt">marcos@opslab-01:~$</span>
-                        <span class="command"> live checks</span>
-                    </div>
-
-                    <div class="blue">↓ /api/health · /api/services · /api/system · /api/runtime · /api/monitoring/history</div>
-
-                    <br>
-
-                    <div>
-                        <span class="prompt">marcos@opslab-01:~$</span>
-                        <span class="cursor"></span>
-                    </div>
-
-                </div>
+        <div class="metrics">
+          <article class="metric" id="metric-uptime">
+            <div class="metric-label">Uptime VPS</div>
+            <div class="metric-value" id="system-uptime">Carregando...</div>
+            <div class="metric-foot">
+              <span>Servidor</span>
+              <span class="metric-ok">● estável</span>
             </div>
+          </article>
 
-        </section>
-
-
-        <section class="live-status" aria-labelledby="live-status-title">
-            <div class="section-heading">
-                <div>
-                    <h2 id="live-status-title">Estado da aplicação</h2>
-                    <p class="section-description">
-                        Leituras independentes da API, PostgreSQL, sistema operacional e runtime Node.js.
-                    </p>
-                </div>
-
-                <button class="refresh-button" id="refresh-button" type="button">Atualizar dados</button>
+          <article class="metric" id="metric-memory">
+            <div class="metric-label">Memória</div>
+            <div class="metric-value" id="memory-percent">Carregando...</div>
+            <div class="metric-foot">
+              <span id="memory-detail">Carregando...</span>
+              <span class="mini-track" aria-hidden="true"><span id="memory-bar"></span></span>
             </div>
+          </article>
 
-            <div class="live-grid">
-                <article class="live-card" id="health-card" data-state="loading" aria-live="polite">
-                    <div class="live-card-header">
-                        <span class="endpoint">GET /api/health</span>
-                        <span class="state-badge" id="health-badge">Carregando</span>
-                    </div>
-                    <h3>API pública</h3>
-                    <p class="live-detail" id="health-detail">Verificando se a API está acessível...</p>
-                </article>
-
-                <article class="live-card" id="services-card" data-state="loading" aria-live="polite">
-                    <div class="live-card-header">
-                        <span class="endpoint">GET /api/services</span>
-                        <span class="state-badge" id="services-badge">Carregando</span>
-                    </div>
-                    <h3>Serviços no PostgreSQL</h3>
-                    <p class="live-detail" id="services-detail">Consultando os registros persistidos...</p>
-                </article>
-
-                <article class="live-card" id="system-card" data-state="loading" aria-live="polite">
-                    <div class="live-card-header">
-                        <span class="endpoint">GET /api/system</span>
-                        <span class="state-badge" id="system-badge">Carregando</span>
-                    </div>
-                    <h3>Sistema operacional</h3>
-                    <p class="live-detail" id="system-detail">Coletando métricas do host...</p>
-                </article>
-
-                <article class="live-card" id="runtime-card" data-state="loading" aria-live="polite">
-                    <div class="live-card-header">
-                        <span class="endpoint">GET /api/runtime</span>
-                        <span class="state-badge" id="runtime-badge">Carregando</span>
-                    </div>
-                    <h3>Runtime Node.js</h3>
-                    <p class="live-detail" id="runtime-detail">Consultando o processo da API...</p>
-                </article>
+          <article class="metric" id="metric-load">
+            <div class="metric-label">Load · 1 min</div>
+            <div class="metric-value" id="system-load">Carregando...</div>
+            <div class="metric-foot">
+              <span>1 vCPU</span>
+              <span class="metric-ok">● baixo</span>
             </div>
+          </article>
 
-            <div class="auto-refresh-meta" aria-live="polite">
-                <span class="auto-refresh-state" id="auto-refresh-state" data-state="active">
-                    Atualização automática ativa
-                </span>
-                <span>
-                    Próxima leitura ao vivo em <time id="refresh-countdown">15s</time>
-                    · cards escalonados a cada 15s · histórico a cada 5min
-                </span>
-                <span>Última atualização: <time id="last-updated">aguardando</time></span>
+          <article class="metric" id="metric-runtime">
+            <div class="metric-label">Heap Node.js</div>
+            <div class="metric-value" id="runtime-heap">Carregando...</div>
+            <div class="metric-foot">
+              <span>Heap utilizado</span>
+              <span class="metric-ok">● online</span>
             </div>
+          </article>
+        </div>
 
-
-        </section>
-
-
-        <section class="infra infra-redesign" aria-labelledby="infra-redesign-title">
-            <div class="infra-redesign-eyebrow">Infraestrutura · live</div>
-
-            <div class="infra-redesign-heading">
-                <div>
-                    <h2 id="infra-redesign-title">Infraestrutura em operação</h2>
-                    <p class="infra-redesign-subtitle">
-                        Saúde da VPS e dos componentes essenciais do OpsLab.
-                    </p>
-                </div>
-
-                <div class="infra-redesign-refresh">
-                    Atualização automática · <strong>dados reais</strong>
-                </div>
+        <div class="topology" aria-label="Componentes da infraestrutura">
+          <article class="component" id="component-nginx-card">
+            <div class="component-node" id="node-nginx" data-state="loading"></div>
+            <div class="component-head">
+              <span class="component-name">Nginx</span>
+              <span class="component-state" id="state-nginx" data-state="loading">verificando</span>
             </div>
+            <div class="component-copy">Web server e reverse proxy da API pública.</div>
+          </article>
 
-            <div class="infra-status-panel" id="infra-status-panel" data-state="loading" role="status" aria-live="polite">
-                <div class="infra-status-main">
-                    <div class="infra-live-orb"></div>
-                    <div>
-                        <div class="infra-status-title" id="infra-status-title">Verificando ambiente</div>
-                        <div class="infra-status-copy" id="infra-status-copy">
-                            Consultando os endpoints públicos do laboratório...
-                        </div>
-                    </div>
-                </div>
-
-                <div class="infra-checks" aria-label="Estado dos componentes principais">
-                    <span class="infra-chip" id="infra-api-chip" data-state="loading">API verificando</span>
-                    <span class="infra-chip" id="infra-nginx-chip" data-state="loading">Nginx verificando</span>
-                    <span class="infra-chip" id="infra-postgres-chip" data-state="loading">PostgreSQL verificando</span>
-                    <span class="infra-chip" data-state="success">UFW ativo</span>
-                </div>
+          <article class="component" id="component-node-card">
+            <div class="component-node" id="node-node" data-state="loading"></div>
+            <div class="component-head">
+              <span class="component-name">Node.js API</span>
+              <span class="component-state" id="state-node" data-state="loading">verificando</span>
             </div>
+            <div class="component-copy">Runtime <span id="component-node-version">consultando</span> · serviço gerenciado pelo systemd.</div>
+          </article>
 
-            <div class="infra-metrics">
-                <article class="infra-metric" id="infra-uptime-card">
-                    <div class="infra-metric-head">
-                        <span class="infra-metric-label">Uptime VPS</span>
-                        <span class="infra-metric-symbol">↗</span>
-                    </div>
-                    <div class="infra-metric-value" id="infra-system-uptime">Carregando...</div>
-                    <div class="infra-metric-foot">
-                        <span>Servidor</span>
-                        <span class="infra-metric-ok">● estável</span>
-                    </div>
-                </article>
-
-                <article class="infra-metric" id="infra-memory-card">
-                    <div class="infra-metric-head">
-                        <span class="infra-metric-label">Memória</span>
-                        <span class="infra-metric-symbol">◫</span>
-                    </div>
-                    <div>
-                        <span class="infra-metric-value" id="infra-memory-percent">Carregando...</span>
-                    </div>
-                    <div class="infra-metric-foot">
-                        <span id="infra-memory-detail">Carregando...</span>
-                        <div class="infra-mini-track" aria-hidden="true">
-                            <span id="infra-memory-bar"></span>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="infra-metric" id="infra-load-card">
-                    <div class="infra-metric-head">
-                        <span class="infra-metric-label">Load · 1 min</span>
-                        <span class="infra-metric-symbol">⌁</span>
-                    </div>
-                    <div class="infra-metric-value" id="infra-system-load">Carregando...</div>
-                    <div class="infra-metric-foot">
-                        <span>1 vCPU</span>
-                        <span class="infra-metric-ok">● baixo</span>
-                    </div>
-                </article>
-
-                <article class="infra-metric" id="infra-runtime-card">
-                    <div class="infra-metric-head">
-                        <span class="infra-metric-label">Processo Node.js</span>
-                        <span class="infra-metric-symbol">◆</span>
-                    </div>
-                    <div class="infra-metric-value" id="infra-runtime-uptime">Carregando...</div>
-                    <div class="infra-metric-foot">
-                        <span id="infra-runtime-rss">RSS carregando...</span>
-                        <span class="infra-metric-ok">● online</span>
-                    </div>
-                </article>
+          <article class="component" id="component-postgres-card">
+            <div class="component-node" id="node-postgres" data-state="loading"></div>
+            <div class="component-head">
+              <span class="component-name">PostgreSQL</span>
+              <span class="component-state" id="state-postgres" data-state="loading">verificando</span>
             </div>
+            <div class="component-copy">Banco local protegido e acessível apenas internamente.</div>
+          </article>
 
-            <div class="infra-components">
-                <div class="infra-component">
-                    <div class="infra-component-top">
-                        <span class="infra-component-name">Nginx</span>
-                        <span class="infra-component-state" id="infra-nginx-state" data-state="loading">verificando</span>
-                    </div>
-                    <div class="infra-component-copy">
-                        Web server e reverse proxy da API pública.
-                    </div>
-                </div>
-
-                <div class="infra-component">
-                    <div class="infra-component-top">
-                        <span class="infra-component-name">Node.js API</span>
-                        <span class="infra-component-state" id="infra-node-state" data-state="loading">verificando</span>
-                    </div>
-                    <div class="infra-component-copy">
-                        Runtime <span id="infra-node-component-version">consultando</span> · serviço gerenciado pelo systemd.
-                    </div>
-                </div>
-
-                <div class="infra-component">
-                    <div class="infra-component-top">
-                        <span class="infra-component-name">PostgreSQL</span>
-                        <span class="infra-component-state" id="infra-postgres-state" data-state="loading">verificando</span>
-                    </div>
-                    <div class="infra-component-copy">
-                        Banco local protegido e acessível apenas internamente.
-                    </div>
-                </div>
-
-                <div class="infra-component">
-                    <div class="infra-component-top">
-                        <span class="infra-component-name">UFW Firewall</span>
-                        <span class="infra-component-state" data-state="success">ativo</span>
-                    </div>
-                    <div class="infra-component-copy">
-                        Política de entrada restrita aos serviços publicados.
-                    </div>
-                </div>
+          <article class="component" id="component-ufw-card">
+            <div class="component-node" data-state="success"></div>
+            <div class="component-head">
+              <span class="component-name">UFW Firewall</span>
+              <span class="component-state" data-state="success">ativo</span>
             </div>
-
-            <div class="infra-environment" aria-label="Ambiente do servidor">
-                <strong id="infra-hostname">Carregando...</strong>
-                <span class="infra-environment-dot">•</span>
-                <span id="infra-os">Carregando...</span>
-                <span class="infra-environment-dot">•</span>
-                <span>Kernel <span id="infra-kernel">Carregando...</span></span>
-                <span class="infra-environment-dot">•</span>
-                <span>Node.js <span id="infra-node-version">Carregando...</span></span>
-            </div>
-        </section>
-
-
-        <section class="history" aria-labelledby="history-title">
-            <div class="section-heading">
-                <div>
-                    <div class="section-title">HISTÓRICO DE MONITORAMENTO</div>
-                    <h2 id="history-title">Comportamento ao longo do tempo</h2>
-                </div>
-            </div>
-
-            <div class="history-toolbar">
-                <div class="history-filters" aria-label="Período do histórico">
-                    <button class="history-filter" type="button" data-hours="1" aria-pressed="false">1h</button>
-                    <button class="history-filter" type="button" data-hours="6" aria-pressed="false">6h</button>
-                    <button class="history-filter" type="button" data-hours="24" aria-pressed="true">24h</button>
-                    <button class="history-filter" type="button" data-hours="168" aria-pressed="false">7 dias</button>
-                </div>
-            </div>
-
-            <div class="history-state" id="history-state" data-state="loading" role="status" aria-live="polite">
-                Consultando o histórico real...
-            </div>
-
-            <div class="history-charts" id="history-charts" hidden>
-                <article class="history-chart-card">
-                    <div class="history-chart-header">
-                        <h3>Memória utilizada</h3>
-                        <span class="history-chart-value" id="history-memory-value">—</span>
-                    </div>
-                    <canvas class="history-canvas" id="history-memory-chart" role="img"
-                        aria-label="Histórico do percentual de memória utilizada"></canvas>
-                </article>
-
-                <article class="history-chart-card">
-                    <div class="history-chart-header">
-                        <h3>Load average · 1 min</h3>
-                        <span class="history-chart-value" id="history-load-value">—</span>
-                    </div>
-                    <canvas class="history-canvas" id="history-load-chart" role="img"
-                        aria-label="Histórico do load average de um minuto"></canvas>
-                </article>
-
-                <article class="history-chart-card">
-                    <div class="history-chart-header">
-                        <h3>Memória RSS · Node.js</h3>
-                        <span class="history-chart-value" id="history-rss-value">—</span>
-                    </div>
-                    <canvas class="history-canvas" id="history-rss-chart" role="img"
-                        aria-label="Histórico da memória RSS do processo Node.js"></canvas>
-                </article>
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <footer>
-        OpsLab · Linux · Cloud · Infrastructure · DevOps
-    </footer>
-
-    <script>
-        "use strict";
-
-        const REQUEST_TIMEOUT_MS = 6000;
-        const CARD_REFRESH_INTERVAL_MS = 15000;
-        const CARD_REFRESH_STAGGER_MS = 1000;
-        const HISTORY_INTERVAL_MS = 300000;
-        const COUNTDOWN_INTERVAL_MS = 1000;
-        const ALLOWED_HISTORY_HOURS = new Set([1, 6, 24, 168]);
-
-        const elements = {
-            globalStatus: document.getElementById("global-api-status"),
-            globalLabel: document.getElementById("global-api-label"),
-            healthCard: document.getElementById("health-card"),
-            healthBadge: document.getElementById("health-badge"),
-            healthDetail: document.getElementById("health-detail"),
-            servicesCard: document.getElementById("services-card"),
-            servicesBadge: document.getElementById("services-badge"),
-            servicesDetail: document.getElementById("services-detail"),
-                        systemCard: document.getElementById("system-card"),
-            systemBadge: document.getElementById("system-badge"),
-            systemDetail: document.getElementById("system-detail"),
-            runtimeCard: document.getElementById("runtime-card"),
-            runtimeBadge: document.getElementById("runtime-badge"),
-            runtimeDetail: document.getElementById("runtime-detail"),
-            terminalHostname: document.getElementById("terminal-hostname"),
-            systemHostname: document.getElementById("infra-hostname"),
-            systemOs: document.getElementById("infra-os"),
-            systemKernel: document.getElementById("infra-kernel"),
-            systemUptime: document.getElementById("infra-system-uptime"),
-            systemMemory: document.getElementById("infra-memory-detail"),
-            systemMemoryPercent: document.getElementById("infra-memory-percent"),
-            systemLoad: document.getElementById("infra-system-load"),
-            runtimeNodeVersion: document.getElementById("infra-node-version"),
-            runtimeUptime: document.getElementById("infra-runtime-uptime"),
-            runtimeRss: document.getElementById("infra-runtime-rss"),
-            infraMemoryBar: document.getElementById("infra-memory-bar"),
-            infraStatusPanel: document.getElementById("infra-status-panel"),
-            infraStatusTitle: document.getElementById("infra-status-title"),
-            infraStatusCopy: document.getElementById("infra-status-copy"),
-            infraApiChip: document.getElementById("infra-api-chip"),
-            infraNginxChip: document.getElementById("infra-nginx-chip"),
-            infraPostgresChip: document.getElementById("infra-postgres-chip"),
-            infraNginxState: document.getElementById("infra-nginx-state"),
-            infraNodeState: document.getElementById("infra-node-state"),
-            infraPostgresState: document.getElementById("infra-postgres-state"),
-            infraNodeComponentVersion: document.getElementById("infra-node-component-version"),
-            infraUptimeCard: document.getElementById("infra-uptime-card"),
-            infraMemoryCard: document.getElementById("infra-memory-card"),
-            infraLoadCard: document.getElementById("infra-load-card"),
-            infraRuntimeMetricCard: document.getElementById("infra-runtime-card"),
-            autoRefreshState: document.getElementById("auto-refresh-state"),
-            refreshCountdown: document.getElementById("refresh-countdown"),
-            lastUpdated: document.getElementById("last-updated"),
-            refreshButton: document.getElementById("refresh-button"),
-            historyState: document.getElementById("history-state"),
-            historyCharts: document.getElementById("history-charts"),
-            historyFilters: [...document.querySelectorAll(".history-filter")],
-            historyMemoryChart: document.getElementById("history-memory-chart"),
-            historyLoadChart: document.getElementById("history-load-chart"),
-            historyRssChart: document.getElementById("history-rss-chart"),
-            historyMemoryValue: document.getElementById("history-memory-value"),
-            historyLoadValue: document.getElementById("history-load-value"),
-            historyRssValue: document.getElementById("history-rss-value")
-        };
-
-        const inFlight = new Map();
-        const scheduleTimers = {
-            cards: null,
-            history: null
-        };
-        const nextRunAt = {
-            cards: null,
-            history: null
-        };
-        const validData = {
-            services: false,
-            system: false,
-            runtime: false,
-            history: false
-        };
-
-        const infraEndpointState = {
-            health: null,
-            services: null,
-            system: null,
-            runtime: null
-        };
-
-        let currentHistoryHours = 24;
-        let lastHistoryPoints = [];
-        let dashboardRefreshPromise = null;
-        let cardRefreshPromise = null;
-        let cardRefreshQueued = false;
-        let countdownTimer = null;
-        let resizeTimer = null;
-        let staggerDelayTimer = null;
-        let staggerDelayResolve = null;
-        let automaticUpdateVersion = 0;
-
-        function setCardState(card, badge, state, label) {
-            card.dataset.state = state;
-            badge.textContent = label;
-        }
-
-        function setHistoryState(state, message) {
-            elements.historyState.dataset.state = state;
-            elements.historyState.textContent = message;
-        }
-
-        function setInfraStatusElement(element, state, label) {
-            element.dataset.state = state;
-            element.textContent = label;
-        }
-
-        function updateInfraOverallState() {
-            const states = Object.values(infraEndpointState);
-
-            if (states.some((state) => state === false)) {
-                elements.infraStatusPanel.dataset.state = "error";
-                elements.infraStatusTitle.textContent = "Atenção no ambiente";
-                elements.infraStatusCopy.textContent =
-                    "Uma ou mais leituras ao vivo não responderam corretamente.";
-                return;
-            }
-
-            if (states.every((state) => state === true)) {
-                elements.infraStatusPanel.dataset.state = "success";
-                elements.infraStatusTitle.textContent = "Ambiente operacional";
-                elements.infraStatusCopy.textContent =
-                    "API pública respondendo e serviços essenciais disponíveis.";
-                return;
-            }
-
-            elements.infraStatusPanel.dataset.state = "loading";
-            elements.infraStatusTitle.textContent = "Verificando ambiente";
-            elements.infraStatusCopy.textContent =
-                "Consultando os endpoints públicos do laboratório...";
-        }
-
-        function flashInfraMetric(element) {
-            element.classList.remove("is-refreshing");
-            void element.offsetWidth;
-            element.classList.add("is-refreshing");
-
-            window.setTimeout(() => {
-                element.classList.remove("is-refreshing");
-            }, 850);
-        }
-
-        function createMessage(message, state) {
-            const paragraph = document.createElement("p");
-            paragraph.className = "services-message";
-            paragraph.dataset.state = state;
-            paragraph.textContent = message;
-            return paragraph;
-        }
-
-        function describeError(error) {
-            if (error.name === "AbortError") {
-                return "A consulta excedeu o limite de 6 segundos. Os últimos valores válidos foram preservados.";
-            }
-
-            return "Não foi possível concluir a consulta agora. Os últimos valores válidos foram preservados.";
-        }
-
-        function isFiniteNumber(value) {
-            return typeof value === "number" && Number.isFinite(value);
-        }
-
-        function formatNumber(value, maximumFractionDigits = 1) {
-            return new Intl.NumberFormat("pt-BR", {
-                maximumFractionDigits
-            }).format(value);
-        }
-
-        function formatDuration(seconds) {
-            const totalSeconds = Math.max(0, Math.floor(seconds));
-            const days = Math.floor(totalSeconds / 86400);
-            const hours = Math.floor((totalSeconds % 86400) / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const parts = [];
-
-            if (days > 0) {
-                parts.push(days + "d");
-            }
-
-            if (hours > 0 || days > 0) {
-                parts.push(hours + "h");
-            }
-
-            parts.push(minutes + "min");
-            return parts.join(" ");
-        }
-
-        function markLastUpdated() {
-            const updatedAt = new Date();
-            elements.lastUpdated.dateTime = updatedAt.toISOString();
-            elements.lastUpdated.textContent = new Intl.DateTimeFormat("pt-BR", {
-                dateStyle: "short",
-                timeStyle: "medium"
-            }).format(updatedAt);
-        }
-
-        function setSystemMetrics(message) {
-            elements.terminalHostname.textContent = message;
-            elements.systemHostname.textContent = message;
-            elements.systemOs.textContent = message;
-            elements.systemKernel.textContent = message;
-            elements.systemUptime.textContent = message;
-            elements.systemMemory.textContent = message;
-            elements.systemMemoryPercent.textContent = message;
-            elements.systemLoad.textContent = message;
-            elements.infraMemoryBar.style.width = "0%";
-        }
-
-        function setRuntimeMetrics(message) {
-            elements.runtimeNodeVersion.textContent = message;
-            elements.runtimeUptime.textContent = message;
-            elements.runtimeRss.textContent = message;
-            elements.infraNodeComponentVersion.textContent = message;
-        }
-
-        function runExclusive(key, task) {
-            if (inFlight.has(key)) {
-                return inFlight.get(key);
-            }
-
-            const promise = Promise.resolve()
-                .then(task)
-                .finally(() => inFlight.delete(key));
-
-            inFlight.set(key, promise);
-            return promise;
-        }
-
-        function validateSystemResponse(system) {
-            if (
-                !system ||
-                typeof system.hostname !== "string" ||
-                typeof system.os !== "string" ||
-                typeof system.kernel !== "string" ||
-                !isFiniteNumber(system.uptimeSeconds) ||
-                !system.memory ||
-                !isFiniteNumber(system.memory.totalMb) ||
-                !isFiniteNumber(system.memory.availableMb) ||
-                !isFiniteNumber(system.memory.usedMb) ||
-                !isFiniteNumber(system.memory.usedPercent) ||
-                !system.loadAverage ||
-                !isFiniteNumber(system.loadAverage.one) ||
-                !isFiniteNumber(system.loadAverage.five) ||
-                !isFiniteNumber(system.loadAverage.fifteen) ||
-                typeof system.checkedAt !== "string"
-            ) {
-                throw new Error("unexpected_system_response");
-            }
-        }
-
-        function validateRuntimeResponse(runtime) {
-            if (
-                !runtime ||
-                runtime.status !== "online" ||
-                typeof runtime.nodeVersion !== "string" ||
-                !isFiniteNumber(runtime.uptimeSeconds) ||
-                !runtime.memory ||
-                !isFiniteNumber(runtime.memory.rssMb) ||
-                !isFiniteNumber(runtime.memory.heapUsedMb) ||
-                !isFiniteNumber(runtime.memory.heapTotalMb) ||
-                typeof runtime.checkedAt !== "string"
-            ) {
-                throw new Error("unexpected_runtime_response");
-            }
-        }
-
-        function validateHistoryResponse(history) {
-            if (
-                !history ||
-                !ALLOWED_HISTORY_HOURS.has(history.hours) ||
-                !Number.isInteger(history.maxPoints) ||
-                history.maxPoints < 1 ||
-                !Array.isArray(history.points) ||
-                history.points.length > history.maxPoints
-            ) {
-                throw new Error("unexpected_history_response");
-            }
-
-            history.points.forEach((point) => {
-                if (
-                    !point ||
-                    typeof point.collectedAt !== "string" ||
-                    typeof point.apiReachable !== "boolean" ||
-                    !point.memory ||
-                    !point.loadAverage ||
-                    !point.runtime
-                ) {
-                    throw new Error("unexpected_history_point");
-                }
-
-                if (point.apiReachable) {
-                    const values = [
-                        point.systemUptimeSeconds,
-                        point.memory.totalMb,
-                        point.memory.availableMb,
-                        point.memory.usedMb,
-                        point.memory.usedPercent,
-                        point.loadAverage.one,
-                        point.loadAverage.five,
-                        point.loadAverage.fifteen,
-                        point.runtime.uptimeSeconds,
-                        point.runtime.rssMb,
-                        point.runtime.heapUsedMb,
-                        point.runtime.heapTotalMb
-                    ];
-
-                    if (!values.every(isFiniteNumber)) {
-                        throw new Error("unexpected_history_metrics");
-                    }
-                }
-            });
-        }
-
-        async function fetchJson(url) {
-            const controller = new AbortController();
-            const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-            try {
-                const response = await fetch(url, {
-                    method: "GET",
-                    headers: { "Accept": "application/json" },
-                    cache: "no-store",
-                    signal: controller.signal
-                });
-
-                let payload = null;
-
-                try {
-                    payload = await response.json();
-                } catch {
-                    if (response.ok) {
-                        throw new Error("invalid_json_response");
-                    }
-                }
-
-                if (!response.ok) {
-                    const error = new Error("HTTP " + response.status);
-                    error.status = response.status;
-                    error.payload = payload;
-                    throw error;
-                }
-
-                return payload;
-            } finally {
-                window.clearTimeout(timeoutId);
-            }
-        }
-
-        function renderServices(services) {
-            return services;
-        }
-
-        function loadHealth() {
-            return runExclusive("health", async () => {
-                setCardState(elements.healthCard, elements.healthBadge, "loading", "Atualizando");
-                elements.healthDetail.textContent = "Verificando se a API está acessível...";
-                elements.globalStatus.dataset.state = "loading";
-                elements.globalLabel.textContent = "Verificando API...";
-                setInfraStatusElement(elements.infraApiChip, "loading", "API verificando");
-                setInfraStatusElement(elements.infraNginxChip, "loading", "Nginx verificando");
-
-                try {
-                    const health = await fetchJson("/api/health");
-
-                    if (!health || health.status !== "ok") {
-                        throw new Error("unexpected_health_response");
-                    }
-
-                    setCardState(elements.healthCard, elements.healthBadge, "success", "Acessível");
-                    elements.healthDetail.textContent =
-                        "A API respondeu com sucesso ao health check público.";
-                    elements.globalStatus.dataset.state = "success";
-                    elements.globalLabel.textContent = "API acessível";
-                    infraEndpointState.health = true;
-                    setInfraStatusElement(elements.infraApiChip, "success", "API online");
-                    setInfraStatusElement(elements.infraNginxChip, "success", "Nginx online");
-                    setInfraStatusElement(elements.infraNginxState, "success", "online");
-                    updateInfraOverallState();
-                    markLastUpdated();
-                } catch (error) {
-                    setCardState(elements.healthCard, elements.healthBadge, "error", "Indisponível");
-                    elements.healthDetail.textContent = describeError(error);
-                    elements.globalStatus.dataset.state = "error";
-                    elements.globalLabel.textContent = "API indisponível";
-                    infraEndpointState.health = false;
-                    setInfraStatusElement(elements.infraApiChip, "error", "API indisponível");
-                    setInfraStatusElement(elements.infraNginxChip, "error", "Nginx sem confirmação");
-                    setInfraStatusElement(elements.infraNginxState, "error", "sem confirmação");
-                    updateInfraOverallState();
-                    throw error;
-                }
-            });
-        }
-
-        function loadServices() {
-            return runExclusive("services", async () => {
-                setCardState(elements.servicesCard, elements.servicesBadge, "loading", "Atualizando");
-                elements.servicesDetail.textContent = "Consultando os registros persistidos...";
-
-                setInfraStatusElement(
-                    elements.infraPostgresChip,
-                    "loading",
-                    "PostgreSQL verificando"
-                );
-
-                try {
-                    const services = await fetchJson("/api/services");
-
-                    if (!Array.isArray(services)) {
-                        throw new Error("unexpected_services_response");
-                    }
-
-                    validData.services = true;
-                    setCardState(elements.servicesCard, elements.servicesBadge, "success", "Consulta OK");
-                    elements.servicesDetail.textContent =
-                        "A API consultou o PostgreSQL e retornou uma lista válida.";
-                    renderServices(services);
-                    infraEndpointState.services = true;
-                    setInfraStatusElement(
-                        elements.infraPostgresChip,
-                        "success",
-                        "PostgreSQL online"
-                    );
-                    setInfraStatusElement(
-                        elements.infraPostgresState,
-                        "success",
-                        "online"
-                    );
-                    updateInfraOverallState();
-                    markLastUpdated();
-                } catch (error) {
-                    const message = describeError(error);
-                    setCardState(elements.servicesCard, elements.servicesBadge, "error", "Falha na consulta");
-                    elements.servicesDetail.textContent = message;
-
-                    infraEndpointState.services = false;
-                    setInfraStatusElement(
-                        elements.infraPostgresChip,
-                        "error",
-                        "PostgreSQL indisponível"
-                    );
-                    setInfraStatusElement(
-                        elements.infraPostgresState,
-                        "error",
-                        "indisponível"
-                    );
-                    updateInfraOverallState();
-                    throw error;
-                }
-            });
-        }
-
-        function loadSystem() {
-            return runExclusive("system", async () => {
-                setCardState(elements.systemCard, elements.systemBadge, "loading", "Atualizando");
-                elements.systemDetail.textContent = "Coletando métricas do host...";
-                flashInfraMetric(elements.infraUptimeCard);
-                flashInfraMetric(elements.infraMemoryCard);
-                flashInfraMetric(elements.infraLoadCard);
-
-                if (!validData.system) {
-                    setSystemMetrics("Carregando...");
-                }
-
-                try {
-                    const system = await fetchJson("/api/system");
-                    validateSystemResponse(system);
-
-                    validData.system = true;
-                    setCardState(elements.systemCard, elements.systemBadge, "success", "Coleta OK");
-                    elements.systemDetail.textContent =
-                        "Métricas públicas do sistema operacional atualizadas.";
-                    elements.terminalHostname.textContent = system.hostname;
-                    elements.systemHostname.textContent = system.hostname;
-                    elements.systemOs.textContent = system.os;
-                    elements.systemKernel.textContent = system.kernel;
-                    elements.systemUptime.textContent = formatDuration(system.uptimeSeconds);
-                    elements.systemMemory.textContent =
-                        formatNumber(system.memory.usedMb) + " MB / " +
-                        formatNumber(system.memory.totalMb) + " MB";
-                    elements.systemMemoryPercent.textContent =
-                        formatNumber(system.memory.usedPercent) + "%";
-                    elements.infraMemoryBar.style.width =
-                        Math.min(Math.max(system.memory.usedPercent, 0), 100) + "%";
-                    elements.systemLoad.textContent =
-                        formatNumber(system.loadAverage.one, 2);
-                    infraEndpointState.system = true;
-                    updateInfraOverallState();
-                    markLastUpdated();
-                } catch (error) {
-                    setCardState(elements.systemCard, elements.systemBadge, "error", "Indisponível");
-                    elements.systemDetail.textContent = describeError(error);
-
-                    if (!validData.system) {
-                        setSystemMetrics("Indisponível");
-                    }
-
-                    infraEndpointState.system = false;
-                    updateInfraOverallState();
-                    throw error;
-                }
-            });
-        }
-
-        function loadRuntime() {
-            return runExclusive("runtime", async () => {
-                setCardState(elements.runtimeCard, elements.runtimeBadge, "loading", "Atualizando");
-                elements.runtimeDetail.textContent = "Consultando o processo da API...";
-                flashInfraMetric(elements.infraRuntimeMetricCard);
-                setInfraStatusElement(elements.infraNodeState, "loading", "verificando");
-
-                if (!validData.runtime) {
-                    setRuntimeMetrics("Carregando...");
-                }
-
-                try {
-                    const runtime = await fetchJson("/api/runtime");
-                    validateRuntimeResponse(runtime);
-
-                    validData.runtime = true;
-                    setCardState(elements.runtimeCard, elements.runtimeBadge, "success", "Online");
-                    elements.runtimeDetail.textContent =
-                        "Runtime Node.js da API respondendo normalmente.";
-                    elements.runtimeNodeVersion.textContent = runtime.nodeVersion;
-                    elements.infraNodeComponentVersion.textContent = runtime.nodeVersion;
-                    elements.runtimeUptime.textContent = formatDuration(runtime.uptimeSeconds);
-                    elements.runtimeRss.textContent =
-                        "RSS " + formatNumber(runtime.memory.rssMb) + " MB";
-                    infraEndpointState.runtime = true;
-                    setInfraStatusElement(elements.infraNodeState, "success", "online");
-                    updateInfraOverallState();
-                    markLastUpdated();
-                } catch (error) {
-                    setCardState(elements.runtimeCard, elements.runtimeBadge, "error", "Indisponível");
-                    elements.runtimeDetail.textContent = describeError(error);
-
-                    if (!validData.runtime) {
-                        setRuntimeMetrics("Indisponível");
-                    }
-
-                    infraEndpointState.runtime = false;
-                    setInfraStatusElement(elements.infraNodeState, "error", "indisponível");
-                    updateInfraOverallState();
-                    throw error;
-                }
-            });
-        }
-
-        function prepareCanvas(canvas) {
-            const width = Math.max(Math.floor(canvas.getBoundingClientRect().width), 260);
-            const height = 180;
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
-
-            canvas.width = Math.floor(width * ratio);
-            canvas.height = Math.floor(height * ratio);
-
-            const context = canvas.getContext("2d");
-            context.setTransform(ratio, 0, 0, ratio, 0, 0);
-            context.clearRect(0, 0, width, height);
-
-            return { context, width, height };
-        }
-
-        function drawLineChart(canvas, points, valueAccessor, options) {
-            const prepared = prepareCanvas(canvas);
-            const context = prepared.context;
-            const width = prepared.width;
-            const height = prepared.height;
-            const plot = {
-                left: 34,
-                top: 12,
-                right: width - 12,
-                bottom: height - 28
-            };
-            const values = points.map(valueAccessor);
-            const maximumValue = options.maximum == null
-                ? Math.max(...values, 1) * 1.1
-                : options.maximum;
-            const minimumValue = options.minimum == null
-                ? Math.min(...values, 0)
-                : options.minimum;
-            const range = Math.max(maximumValue - minimumValue, 1);
-
-            context.lineWidth = 1;
-            context.strokeStyle = "rgba(148, 163, 184, .14)";
-            context.fillStyle = "#64748b";
-            context.font = "10px Inter, Arial, sans-serif";
-
-            for (let line = 0; line <= 3; line += 1) {
-                const y = plot.top + ((plot.bottom - plot.top) * line / 3);
-                context.beginPath();
-                context.moveTo(plot.left, y);
-                context.lineTo(plot.right, y);
-                context.stroke();
-
-                const labelValue = maximumValue - (range * line / 3);
-                context.fillText(
-                    formatNumber(labelValue, options.decimals),
-                    2,
-                    y + 3
-                );
-            }
-
-            context.strokeStyle = options.color;
-            context.lineWidth = 2;
-            context.lineJoin = "round";
-            context.lineCap = "round";
-            context.beginPath();
-
-            values.forEach((value, index) => {
-                const x = values.length === 1
-                    ? plot.right
-                    : plot.left + ((plot.right - plot.left) * index / (values.length - 1));
-                const y = plot.bottom -
-                    ((value - minimumValue) / range) * (plot.bottom - plot.top);
-
-                if (index === 0) {
-                    context.moveTo(x, y);
-                } else {
-                    context.lineTo(x, y);
-                }
-            });
-
-            context.stroke();
-
-            const firstTime = new Date(points[0].collectedAt);
-            const lastTime = new Date(points[points.length - 1].collectedAt);
-            const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit"
-            });
-
-            context.fillStyle = "#64748b";
-            context.textAlign = "left";
-            context.fillText(timeFormatter.format(firstTime), plot.left, height - 8);
-            context.textAlign = "right";
-            context.fillText(timeFormatter.format(lastTime), plot.right, height - 8);
-            context.textAlign = "left";
-        }
-
-        function clearHistoryValues() {
-            elements.historyCharts.hidden = true;
-            elements.historyMemoryValue.textContent = "—";
-            elements.historyLoadValue.textContent = "—";
-            elements.historyRssValue.textContent = "—";
-        }
-
-        function renderHistory(points) {
-            const usablePoints = points.filter((point) =>
-                point.apiReachable &&
-                isFiniteNumber(point.memory.usedPercent) &&
-                isFiniteNumber(point.loadAverage.one) &&
-                isFiniteNumber(point.runtime.rssMb)
-            );
-
-            lastHistoryPoints = usablePoints;
-
-            if (usablePoints.length === 0) {
-                clearHistoryValues();
-                return false;
-            }
-
-            elements.historyCharts.hidden = false;
-            const latest = usablePoints[usablePoints.length - 1];
-
-            elements.historyMemoryValue.textContent =
-                formatNumber(latest.memory.usedPercent) + "%";
-            elements.historyLoadValue.textContent =
-                formatNumber(latest.loadAverage.one, 2);
-            elements.historyRssValue.textContent =
-                formatNumber(latest.runtime.rssMb) + " MB";
-
-            drawLineChart(
-                elements.historyMemoryChart,
-                usablePoints,
-                (point) => point.memory.usedPercent,
-                { minimum: 0, maximum: 100, decimals: 0, color: "#38bdf8" }
-            );
-            drawLineChart(
-                elements.historyLoadChart,
-                usablePoints,
-                (point) => point.loadAverage.one,
-                { minimum: 0, maximum: null, decimals: 2, color: "#a78bfa" }
-            );
-            drawLineChart(
-                elements.historyRssChart,
-                usablePoints,
-                (point) => point.runtime.rssMb,
-                { minimum: 0, maximum: null, decimals: 0, color: "#4ade80" }
-            );
-
-            return true;
-        }
-
-        function loadHistory() {
-            return runExclusive("history", async () => {
-                if (!validData.history) {
-                    setHistoryState("loading", "Consultando o histórico real...");
-                    clearHistoryValues();
-                } else {
-                    setHistoryState("loading", "Atualizando o histórico...");
-                }
-
-                try {
-                    const history = await fetchJson(
-                        "/api/monitoring/history?hours=" + String(currentHistoryHours)
-                    );
-                    validateHistoryResponse(history);
-                    validData.history = true;
-
-                    if (renderHistory(history.points)) {
-                        setHistoryState(
-                            "success",
-                            String(history.points.length) +
-                                " snapshots no período selecionado."
-                        );
-                    } else if (history.points.length === 0) {
-                        setHistoryState(
-                            "empty",
-                            "A consulta funcionou, mas ainda não existem snapshots neste período."
-                        );
-                    } else {
-                        setHistoryState(
-                            "empty",
-                            "Existem snapshots, mas nenhum contém métricas completas para os gráficos."
-                        );
-                    }
-
-                    markLastUpdated();
-                } catch (error) {
-                    const migrationMissing =
-                        error.status === 503 &&
-                        error.payload &&
-                        error.payload.reason === "migration_not_applied";
-
-                    if (migrationMissing) {
-                        setHistoryState(
-                            "unavailable",
-                            "Histórico indisponível: a migration 002 ainda não foi aplicada."
-                        );
-                    } else {
-                        setHistoryState(
-                            "error",
-                            validData.history
-                                ? "Falha ao atualizar. Os últimos dados históricos válidos foram preservados."
-                                : "Não foi possível consultar o histórico agora."
-                        );
-                    }
-
-                    if (!validData.history) {
-                        clearHistoryValues();
-                    }
-
-                    throw error;
-                }
-            });
-        }
-
-        function clearStaggerDelay() {
-            if (staggerDelayTimer !== null) {
-                window.clearTimeout(staggerDelayTimer);
-                staggerDelayTimer = null;
-            }
-
-            if (staggerDelayResolve !== null) {
-                const resolve = staggerDelayResolve;
-                staggerDelayResolve = null;
-                resolve(false);
-            }
-        }
-
-        function waitForStagger(delay) {
-            if (delay <= 0) {
-                return Promise.resolve(true);
-            }
-
-            return new Promise((resolve) => {
-                staggerDelayResolve = resolve;
-                staggerDelayTimer = window.setTimeout(() => {
-                    staggerDelayTimer = null;
-                    staggerDelayResolve = null;
-                    resolve(true);
-                }, delay);
-            });
-        }
-
-        function runStaggeredCardRefresh(queueIfBusy = false) {
-            if (cardRefreshPromise) {
-                if (!queueIfBusy) {
-                    return cardRefreshPromise;
-                }
-
-                cardRefreshQueued = true;
-                return cardRefreshPromise.then(() => {
-                    if (!cardRefreshQueued || document.hidden) {
-                        return undefined;
-                    }
-
-                    cardRefreshQueued = false;
-                    return runStaggeredCardRefresh();
-                });
-            }
-
-            const cycleStartedAt = Date.now();
-            const tasks = [loadHealth, loadRuntime, loadSystem, loadServices];
-
-            cardRefreshPromise = (async () => {
-                for (let index = 0; index < tasks.length; index += 1) {
-                    const targetTime = cycleStartedAt +
-                        (index * CARD_REFRESH_STAGGER_MS);
-                    const canContinue = await waitForStagger(
-                        Math.max(0, targetTime - Date.now())
-                    );
-
-                    if (!canContinue || document.hidden) {
-                        return;
-                    }
-
-                    await Promise.allSettled([tasks[index]()]);
-                }
-            })().finally(() => {
-                cardRefreshPromise = null;
-            });
-
-            return cardRefreshPromise;
-        }
-
-        function clearSchedule(name) {
-            if (scheduleTimers[name] !== null) {
-                window.clearTimeout(scheduleTimers[name]);
-                scheduleTimers[name] = null;
-            }
-
-            nextRunAt[name] = null;
-        }
-
-        function schedule(name, interval, task, version = automaticUpdateVersion) {
-            clearSchedule(name);
-
-            if (document.hidden) {
-                return;
-            }
-
-            nextRunAt[name] = Date.now() + interval;
-            scheduleTimers[name] = window.setTimeout(async () => {
-                scheduleTimers[name] = null;
-
-                if (!document.hidden && version === automaticUpdateVersion) {
-                    await Promise.allSettled([task()]);
-
-                    if (!document.hidden && version === automaticUpdateVersion) {
-                        schedule(name, interval, task, version);
-                    }
-                }
-            }, interval);
-        }
-
-        function scheduleCardRefresh(
-            delay = CARD_REFRESH_INTERVAL_MS,
-            version = automaticUpdateVersion
-        ) {
-            clearSchedule("cards");
-
-            if (document.hidden || version !== automaticUpdateVersion) {
-                return;
-            }
-
-            nextRunAt.cards = Date.now() + delay;
-            scheduleTimers.cards = window.setTimeout(async () => {
-                scheduleTimers.cards = null;
-
-                if (document.hidden || version !== automaticUpdateVersion) {
-                    return;
-                }
-
-                const cycleStartedAt = Date.now();
-                await runStaggeredCardRefresh();
-
-                if (!document.hidden && version === automaticUpdateVersion) {
-                    const elapsed = Date.now() - cycleStartedAt;
-                    scheduleCardRefresh(
-                        Math.max(0, CARD_REFRESH_INTERVAL_MS - elapsed),
-                        version
-                    );
-                }
-            }, delay);
-        }
-
-        function startAutomaticUpdates() {
-            automaticUpdateVersion += 1;
-            const version = automaticUpdateVersion;
-
-            elements.autoRefreshState.dataset.state = "active";
-            elements.autoRefreshState.textContent = "Atualização automática ativa";
-
-            scheduleCardRefresh(CARD_REFRESH_INTERVAL_MS, version);
-            schedule("history", HISTORY_INTERVAL_MS, loadHistory, version);
-            updateCountdown();
-        }
-
-        function pauseAutomaticUpdates() {
-            automaticUpdateVersion += 1;
-            Object.keys(scheduleTimers).forEach(clearSchedule);
-            clearStaggerDelay();
-            cardRefreshQueued = false;
-            elements.autoRefreshState.dataset.state = "paused";
-            elements.autoRefreshState.textContent = "Atualização automática pausada";
-            elements.refreshCountdown.textContent = "pausada";
-        }
-
-        function updateCountdown() {
-            if (document.hidden || nextRunAt.cards === null) {
-                elements.refreshCountdown.textContent = "pausada";
-                return;
-            }
-
-            const seconds = Math.max(
-                0,
-                Math.ceil((nextRunAt.cards - Date.now()) / 1000)
-            );
-            elements.refreshCountdown.textContent = String(seconds) + "s";
-        }
-
-        async function refreshDashboard() {
-            if (dashboardRefreshPromise) {
-                return dashboardRefreshPromise;
-            }
-
-            elements.refreshButton.disabled = true;
-            elements.refreshButton.textContent = "Atualizando...";
-
-            dashboardRefreshPromise = Promise.allSettled([
-                runStaggeredCardRefresh(true),
-                loadHistory()
-            ]).finally(() => {
-                dashboardRefreshPromise = null;
-                elements.refreshButton.disabled = false;
-                elements.refreshButton.textContent = "Atualizar dados";
-            });
-
-            return dashboardRefreshPromise;
-        }
-
-        elements.refreshButton.addEventListener("click", refreshDashboard);
-
-        elements.historyFilters.forEach((button) => {
-            button.addEventListener("click", () => {
-                const hours = Number(button.dataset.hours);
-
-                if (!ALLOWED_HISTORY_HOURS.has(hours) || hours === currentHistoryHours) {
-                    return;
-                }
-
-                currentHistoryHours = hours;
-                elements.historyFilters.forEach((filter) => {
-                    filter.setAttribute(
-                        "aria-pressed",
-                        String(filter === button)
-                    );
-                });
-                Promise.allSettled([loadHistory()]);
-
-                if (!document.hidden) {
-                    schedule("history", HISTORY_INTERVAL_MS, loadHistory);
-                }
-            });
-        });
-
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden) {
-                pauseAutomaticUpdates();
-            } else {
-                const pendingRefresh = dashboardRefreshPromise;
-
-                if (pendingRefresh) {
-                    pendingRefresh.finally(() => {
-                        if (!document.hidden) {
-                            refreshDashboard();
-                        }
-                    });
-                } else {
-                    refreshDashboard();
-                }
-
-                startAutomaticUpdates();
-            }
-        });
-
-        window.addEventListener("resize", () => {
-            window.clearTimeout(resizeTimer);
-            resizeTimer = window.setTimeout(() => {
-                if (lastHistoryPoints.length > 0) {
-                    renderHistory(lastHistoryPoints);
-                }
-            }, 150);
-        });
-
-        countdownTimer = window.setInterval(updateCountdown, COUNTDOWN_INTERVAL_MS);
-
-        refreshDashboard().finally(() => {
-            if (document.hidden) {
-                pauseAutomaticUpdates();
-            } else {
-                startAutomaticUpdates();
-            }
-        });
-    </script>
-<script>
-  (() => {
-    const payload = {
-      path: "/opslab/",
-      referrer: document.referrer || "",
-      language: navigator.language || "",
-      timezone:
-        Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-      screenWidth: window.screen?.width || null,
-      screenHeight: window.screen?.height || null
+            <div class="component-copy">Política de entrada restrita aos serviços publicados.</div>
+          </article>
+        </div>
+
+        <div class="machine-line">
+          <strong id="machine-hostname">Carregando...</strong>
+          <span class="sep">•</span>
+          <span id="machine-os">Carregando...</span>
+          <span class="sep">•</span>
+          <span>Kernel <span id="machine-kernel">Carregando...</span></span>
+          <span class="sep">•</span>
+          <span>Node.js <span id="machine-node-version">Carregando...</span></span>
+        </div>
+      </div>
+    </section>
+
+
+    <div class="section-divider"></div>
+
+    <section class="section" aria-labelledby="history-title">
+      <div class="section-head">
+        <div>
+          <div class="section-kicker">Histórico de monitoramento</div>
+          <h2 id="history-title">Comportamento ao longo do tempo</h2>
+          <p class="section-sub">Snapshots do OpsLab acompanham memória, carga do sistema e processo Node.js.</p>
+        </div>
+      </div>
+
+      <div class="history-tools">
+        <div class="filters" aria-label="Período do histórico">
+          <button class="filter" type="button" data-hours="1" aria-pressed="false">1h</button>
+          <button class="filter" type="button" data-hours="6" aria-pressed="false">6h</button>
+          <button class="filter" type="button" data-hours="24" aria-pressed="true">24h</button>
+          <button class="filter" type="button" data-hours="168" aria-pressed="false">7 dias</button>
+        </div>
+      </div>
+
+      <div class="history-state" id="history-state" data-state="loading">Consultando histórico real...</div>
+
+      <div class="charts" id="history-charts" hidden>
+        <article class="chart-card">
+          <div class="chart-head">
+            <h3>Memória utilizada</h3>
+            <span class="chart-value" id="history-memory-value">—</span>
+          </div>
+          <canvas id="history-memory-chart" aria-label="Histórico da memória utilizada"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-head">
+            <h3>Load average · 1 min</h3>
+            <span class="chart-value" id="history-load-value">—</span>
+          </div>
+          <canvas id="history-load-chart" aria-label="Histórico do load average"></canvas>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-head">
+            <h3>Memória RSS · Node.js</h3>
+            <span class="chart-value" id="history-rss-value">—</span>
+          </div>
+          <canvas id="history-rss-chart" aria-label="Histórico da memória RSS do Node.js"></canvas>
+        </article>
+      </div>
+    </section>
+
+
+    <div class="section-divider"></div>
+
+    <section class="explore-minimal" aria-label="Links do projeto e perfil profissional">
+      <div class="explore-minimal-inner">
+        <div class="explore-minimal-label">Continue explorando</div>
+
+        <nav class="explore-minimal-links" aria-label="Links externos">
+          <a class="explore-minimal-link" href="https://github.com/marcosfaquete/opslab" target="_blank" rel="noopener noreferrer">GitHub · OpsLab</a>
+          <a class="explore-minimal-link" href="https://www.linkedin.com/in/marcosfaquete" target="_blank" rel="noopener noreferrer">LinkedIn · Marcos Faquete</a>
+        </nav>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    OpsLab · Linux · Cloud · Infrastructure · DevOps
+  </footer>
+
+  <script>
+    "use strict";
+
+    const REQUEST_TIMEOUT_MS = 6000;
+    const CARD_REFRESH_INTERVAL_MS = 15000;
+    const CARD_REFRESH_STAGGER_MS = 1000;
+    const HISTORY_INTERVAL_MS = 300000;
+    const ALLOWED_HISTORY_HOURS = new Set([1, 6, 24, 168]);
+
+    const $ = (id) => document.getElementById(id);
+
+    const el = {
+      globalStatus: $("global-status"),
+      globalStatusLabel: $("global-status-label"),
+      terminalHostname: $("terminal-hostname"),
+
+      healthCard: $("health-card"),
+      healthBadge: $("health-badge"),
+      healthDetail: $("health-detail"),
+
+      runtimeCard: $("runtime-card"),
+      runtimeBadge: $("runtime-badge"),
+      runtimeDetail: $("runtime-detail"),
+
+      systemCard: $("system-card"),
+      systemBadge: $("system-badge"),
+      systemDetail: $("system-detail"),
+
+      servicesCard: $("services-card"),
+      servicesBadge: $("services-badge"),
+      servicesDetail: $("services-detail"),
+
+      refreshButton: $("refresh-button"),
+      refreshCountdown: $("refresh-countdown"),
+      lastUpdated: $("last-updated"),
+      autoRefreshLabel: $("auto-refresh-label"),
+
+      overallPanel: $("overall-panel"),
+      overallTitle: $("overall-title"),
+      overallCopy: $("overall-copy"),
+
+      chipApi: $("chip-api"),
+      chipNginx: $("chip-nginx"),
+      chipPostgres: $("chip-postgres"),
+
+      systemUptime: $("system-uptime"),
+      memoryPercent: $("memory-percent"),
+      memoryDetail: $("memory-detail"),
+      memoryBar: $("memory-bar"),
+      systemLoad: $("system-load"),
+
+      runtimeHeap: $("runtime-heap"),
+
+      stateNginx: $("state-nginx"),
+      stateNode: $("state-node"),
+      statePostgres: $("state-postgres"),
+      nodeNginx: $("node-nginx"),
+      nodeNode: $("node-node"),
+      nodePostgres: $("node-postgres"),
+      componentNginxCard: $("component-nginx-card"),
+      componentNodeCard: $("component-node-card"),
+      componentPostgresCard: $("component-postgres-card"),
+      componentUfwCard: $("component-ufw-card"),
+      componentNodeVersion: $("component-node-version"),
+
+      machineHostname: $("machine-hostname"),
+      machineOs: $("machine-os"),
+      machineKernel: $("machine-kernel"),
+      machineNodeVersion: $("machine-node-version"),
+
+      metricUptime: $("metric-uptime"),
+      metricMemory: $("metric-memory"),
+      metricLoad: $("metric-load"),
+      metricRuntime: $("metric-runtime"),
+
+      historyState: $("history-state"),
+      historyCharts: $("history-charts"),
+      historyMemoryValue: $("history-memory-value"),
+      historyLoadValue: $("history-load-value"),
+      historyRssValue: $("history-rss-value"),
+      historyMemoryChart: $("history-memory-chart"),
+      historyLoadChart: $("history-load-chart"),
+      historyRssChart: $("history-rss-chart"),
+      historyFilters: [...document.querySelectorAll(".filter")]
     };
 
-    fetch("/api/analytics/pageview", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload),
-      keepalive: true
-    }).catch(() => {
-      // Analytics nunca deve impedir a página de funcionar.
-    });
-  })();
-</script>
+    const infraState = {
+      health: null,
+      runtime: null,
+      system: null,
+      services: null
+    };
 
+    let currentHistoryHours = 24;
+    let cardTimer = null;
+    let historyTimer = null;
+    let countdownTimer = null;
+    let nextCardsAt = null;
+    let lastHistoryPoints = [];
+    let runningCards = false;
+
+    function formatNumber(value, digits = 1) {
+      return new Intl.NumberFormat("pt-BR", {
+        maximumFractionDigits: digits
+      }).format(value);
+    }
+
+    function formatDuration(seconds) {
+      const total = Math.max(0, Math.floor(seconds));
+      const days = Math.floor(total / 86400);
+      const hours = Math.floor((total % 86400) / 3600);
+      const minutes = Math.floor((total % 3600) / 60);
+      const parts = [];
+      if (days) parts.push(days + "d");
+      if (hours || days) parts.push(hours + "h");
+      parts.push(minutes + "min");
+      return parts.join(" ");
+    }
+
+    function markUpdated() {
+      const now = new Date();
+      el.lastUpdated.textContent = new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "medium"
+      }).format(now);
+    }
+
+    async function fetchJson(url) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+      try {
+        const response = await fetch(url, {
+          headers: { "Accept": "application/json" },
+          cache: "no-store",
+          signal: controller.signal
+        });
+
+        let payload = null;
+        try { payload = await response.json(); } catch {}
+
+        if (!response.ok) {
+          const error = new Error("HTTP " + response.status);
+          error.status = response.status;
+          error.payload = payload;
+          throw error;
+        }
+
+        return payload;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function errorText(error) {
+      return error && error.name === "AbortError"
+        ? "A consulta excedeu o limite de 6 segundos. Os últimos valores válidos foram preservados."
+        : "Não foi possível concluir a consulta agora. Os últimos valores válidos foram preservados.";
+    }
+
+    function setCheck(card, badge, state, label, text) {
+      card.dataset.state = state;
+      badge.textContent = label;
+      card.querySelector("p").textContent = text;
+    }
+
+    function setChip(chip, state, label) {
+      chip.dataset.state = state;
+      chip.lastChild.textContent = label;
+    }
+
+    function flash(element) {
+      element.classList.remove("is-refreshing");
+      void element.offsetWidth;
+      element.classList.add("is-refreshing");
+      setTimeout(() => element.classList.remove("is-refreshing"), 850);
+    }
+
+    function updateOverall() {
+      const states = Object.values(infraState);
+
+      if (states.some(v => v === false)) {
+        el.overallPanel.dataset.state = "error";
+        el.overallTitle.textContent = "Atenção no ambiente";
+        el.overallCopy.textContent = "Uma ou mais leituras não responderam corretamente.";
+        return;
+      }
+
+      if (states.every(v => v === true)) {
+        el.overallPanel.dataset.state = "success";
+        el.overallTitle.textContent = "Ambiente operacional";
+        el.overallCopy.textContent = "API pública respondendo e serviços essenciais disponíveis.";
+        return;
+      }
+
+      el.overallPanel.dataset.state = "loading";
+      el.overallTitle.textContent = "Verificando ambiente";
+      el.overallCopy.textContent = "Consultando componentes...";
+    }
+
+    async function loadHealth() {
+      flash(el.healthCard);
+      flash(el.componentNginxCard);
+      setCheck(el.healthCard, el.healthBadge, "loading", "verificando", "Consultando endpoint público...");
+      el.globalStatus.dataset.state = "loading";
+      el.globalStatusLabel.textContent = "verificando API";
+      setChip(el.chipApi, "loading", "API verificando");
+      setChip(el.chipNginx, "loading", "Nginx verificando");
+      el.nodeNginx.dataset.state = "loading";
+
+      try {
+        const data = await fetchJson("/api/health");
+        if (!data || data.status !== "ok") throw new Error("unexpected_health");
+
+        setCheck(el.healthCard, el.healthBadge, "success", "Acessível", "A API respondeu com sucesso ao health check público.");
+        el.globalStatus.dataset.state = "success";
+        el.globalStatusLabel.textContent = "API acessível";
+
+        infraState.health = true;
+        setChip(el.chipApi, "success", "API online");
+        setChip(el.chipNginx, "success", "Nginx online");
+        el.stateNginx.dataset.state = "success";
+        el.stateNginx.textContent = "online";
+        el.nodeNginx.dataset.state = "success";
+        updateOverall();
+        markUpdated();
+      } catch (error) {
+        setCheck(el.healthCard, el.healthBadge, "error", "indisponível", errorText(error));
+        el.globalStatus.dataset.state = "error";
+        el.globalStatusLabel.textContent = "API indisponível";
+
+        infraState.health = false;
+        setChip(el.chipApi, "error", "API indisponível");
+        setChip(el.chipNginx, "error", "Nginx sem confirmação");
+        el.stateNginx.dataset.state = "error";
+        el.stateNginx.textContent = "sem confirmação";
+        el.nodeNginx.dataset.state = "error";
+        updateOverall();
+      }
+    }
+
+    async function loadRuntime() {
+      flash(el.runtimeCard);
+      flash(el.metricRuntime);
+      flash(el.componentNodeCard);
+      setCheck(el.runtimeCard, el.runtimeBadge, "loading", "verificando", "Consultando runtime...");
+      el.stateNode.dataset.state = "loading";
+      el.stateNode.textContent = "verificando";
+      el.nodeNode.dataset.state = "loading";
+
+      try {
+        const data = await fetchJson("/api/runtime");
+        if (!data || data.status !== "online") throw new Error("unexpected_runtime");
+
+        setCheck(el.runtimeCard, el.runtimeBadge, "success", "Online", "Runtime Node.js da API respondendo normalmente.");
+        if (!data.memory || !Number.isFinite(data.memory.heapUsedMb)) {
+          throw new Error("unexpected_runtime_memory");
+        }
+        el.runtimeHeap.textContent = formatNumber(data.memory.heapUsedMb) + " MB";
+        el.machineNodeVersion.textContent = data.nodeVersion;
+        el.componentNodeVersion.textContent = data.nodeVersion;
+        el.stateNode.dataset.state = "success";
+        el.stateNode.textContent = "online";
+        el.nodeNode.dataset.state = "success";
+        infraState.runtime = true;
+        updateOverall();
+        markUpdated();
+      } catch (error) {
+        setCheck(el.runtimeCard, el.runtimeBadge, "error", "indisponível", errorText(error));
+        el.stateNode.dataset.state = "error";
+        el.stateNode.textContent = "indisponível";
+        el.nodeNode.dataset.state = "error";
+        infraState.runtime = false;
+        updateOverall();
+      }
+    }
+
+    async function loadSystem() {
+      flash(el.systemCard);
+      flash(el.componentUfwCard);
+      flash(el.metricUptime);
+      flash(el.metricMemory);
+      flash(el.metricLoad);
+      setCheck(el.systemCard, el.systemBadge, "loading", "verificando", "Coletando métricas da VPS...");
+
+      try {
+        const data = await fetchJson("/api/system");
+        if (!data || typeof data.hostname !== "string" || !data.memory || !data.loadAverage) {
+          throw new Error("unexpected_system");
+        }
+
+        setCheck(el.systemCard, el.systemBadge, "success", "Coleta OK", "Métricas públicas do sistema operacional atualizadas.");
+
+        el.terminalHostname.textContent = data.hostname;
+        el.machineHostname.textContent = data.hostname;
+        el.machineOs.textContent = data.os;
+        el.machineKernel.textContent = data.kernel;
+
+        el.systemUptime.textContent = formatDuration(data.uptimeSeconds);
+        el.memoryPercent.textContent = formatNumber(data.memory.usedPercent) + "%";
+        el.memoryDetail.textContent = formatNumber(data.memory.usedMb) + " MB / " + formatNumber(data.memory.totalMb) + " MB";
+        el.memoryBar.style.width = Math.min(Math.max(data.memory.usedPercent, 0), 100) + "%";
+        el.systemLoad.textContent = formatNumber(data.loadAverage.one, 2);
+
+        infraState.system = true;
+        updateOverall();
+        markUpdated();
+      } catch (error) {
+        setCheck(el.systemCard, el.systemBadge, "error", "indisponível", errorText(error));
+        infraState.system = false;
+        updateOverall();
+      }
+    }
+
+    async function loadServices() {
+      flash(el.servicesCard);
+      flash(el.componentPostgresCard);
+      setCheck(el.servicesCard, el.servicesBadge, "loading", "verificando", "Consultando serviço interno...");
+      setChip(el.chipPostgres, "loading", "PostgreSQL verificando");
+      el.statePostgres.dataset.state = "loading";
+      el.statePostgres.textContent = "verificando";
+      el.nodePostgres.dataset.state = "loading";
+
+      try {
+        const data = await fetchJson("/api/services");
+        if (!Array.isArray(data)) throw new Error("unexpected_services");
+
+        setCheck(el.servicesCard, el.servicesBadge, "success", "Consulta OK", "A API consultou o PostgreSQL e retornou uma lista válida.");
+        setChip(el.chipPostgres, "success", "PostgreSQL online");
+        el.statePostgres.dataset.state = "success";
+        el.statePostgres.textContent = "online";
+        el.nodePostgres.dataset.state = "success";
+        infraState.services = true;
+        updateOverall();
+        markUpdated();
+      } catch (error) {
+        setCheck(el.servicesCard, el.servicesBadge, "error", "falha", errorText(error));
+        setChip(el.chipPostgres, "error", "PostgreSQL indisponível");
+        el.statePostgres.dataset.state = "error";
+        el.statePostgres.textContent = "indisponível";
+        el.nodePostgres.dataset.state = "error";
+        infraState.services = false;
+        updateOverall();
+      }
+    }
+
+    function prepareCanvas(canvas) {
+      const cssWidth = Math.max(Math.floor(canvas.getBoundingClientRect().width), 260);
+      const cssHeight = 175;
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+
+      canvas.width = Math.floor(cssWidth * ratio);
+      canvas.height = Math.floor(cssHeight * ratio);
+
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+      return { ctx, width: cssWidth, height: cssHeight };
+    }
+
+    function drawChart(canvas, points, accessor, options) {
+      const { ctx, width, height } = prepareCanvas(canvas);
+      const plot = { left: 34, top: 10, right: width - 10, bottom: height - 25 };
+      const values = points.map(accessor);
+
+      const min = options.min ?? Math.min(...values, 0);
+      const max = options.max ?? Math.max(...values, 1) * 1.08;
+      const range = Math.max(max - min, 1);
+
+      ctx.font = "9px " + getComputedStyle(document.documentElement).getPropertyValue("--mono");
+      ctx.fillStyle = "#536176";
+      ctx.strokeStyle = "rgba(139, 158, 186, .10)";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= 3; i++) {
+        const y = plot.top + (plot.bottom - plot.top) * i / 3;
+        ctx.beginPath();
+        ctx.moveTo(plot.left, y);
+        ctx.lineTo(plot.right, y);
+        ctx.stroke();
+
+        const v = max - range * i / 3;
+        ctx.fillText(formatNumber(v, options.digits), 2, y + 3);
+      }
+
+      ctx.strokeStyle = options.color;
+      ctx.lineWidth = 1.8;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+
+      values.forEach((v, index) => {
+        const x = values.length === 1
+          ? plot.right
+          : plot.left + (plot.right - plot.left) * index / (values.length - 1);
+        const y = plot.bottom - ((v - min) / range) * (plot.bottom - plot.top);
+        index === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      });
+
+      ctx.stroke();
+
+      const first = new Date(points[0].collectedAt);
+      const last = new Date(points[points.length - 1].collectedAt);
+      const fmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+      ctx.fillStyle = "#536176";
+      ctx.textAlign = "left";
+      ctx.fillText(fmt.format(first), plot.left, height - 7);
+      ctx.textAlign = "right";
+      ctx.fillText(fmt.format(last), plot.right, height - 7);
+      ctx.textAlign = "left";
+    }
+
+    function renderHistory(points) {
+      const usable = points.filter(p =>
+        p && p.apiReachable &&
+        p.memory && Number.isFinite(p.memory.usedPercent) &&
+        p.loadAverage && Number.isFinite(p.loadAverage.one) &&
+        p.runtime && Number.isFinite(p.runtime.rssMb)
+      );
+
+      lastHistoryPoints = usable;
+
+      if (!usable.length) {
+        el.historyCharts.hidden = true;
+        return false;
+      }
+
+      el.historyCharts.hidden = false;
+
+      const latest = usable[usable.length - 1];
+      el.historyMemoryValue.textContent = formatNumber(latest.memory.usedPercent) + "%";
+      el.historyLoadValue.textContent = formatNumber(latest.loadAverage.one, 2);
+      el.historyRssValue.textContent = formatNumber(latest.runtime.rssMb) + " MB";
+
+      drawChart(el.historyMemoryChart, usable, p => p.memory.usedPercent, {
+        min: 0, max: 100, digits: 0, color: "#55d6ff"
+      });
+
+      drawChart(el.historyLoadChart, usable, p => p.loadAverage.one, {
+        min: 0, digits: 2, color: "#9f8cff"
+      });
+
+      drawChart(el.historyRssChart, usable, p => p.runtime.rssMb, {
+        min: 0, digits: 0, color: "#62e6a7"
+      });
+
+      return true;
+    }
+
+    async function loadHistory() {
+      el.historyState.dataset.state = "loading";
+      el.historyState.textContent = "Consultando histórico real...";
+
+      try {
+        const data = await fetchJson("/api/monitoring/history?hours=" + currentHistoryHours);
+
+        if (!data || !Array.isArray(data.points)) throw new Error("unexpected_history");
+
+        if (renderHistory(data.points)) {
+          el.historyState.dataset.state = "success";
+          el.historyState.textContent = data.points.length + " snapshots no período selecionado.";
+        } else {
+          el.historyState.dataset.state = "empty";
+          el.historyState.textContent = data.points.length
+            ? "Existem snapshots, mas ainda não há métricas completas para os gráficos."
+            : "A consulta funcionou, mas ainda não existem snapshots neste período.";
+        }
+
+        markUpdated();
+      } catch (error) {
+        const migrationMissing =
+          error.status === 503 &&
+          error.payload &&
+          error.payload.reason === "migration_not_applied";
+
+        el.historyState.dataset.state = migrationMissing ? "unavailable" : "error";
+        el.historyState.textContent = migrationMissing
+          ? "Histórico indisponível: a migration 002 ainda não foi aplicada."
+          : "Não foi possível consultar o histórico agora.";
+      }
+    }
+
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function runCards() {
+      if (runningCards || document.hidden) return;
+      runningCards = true;
+
+      try {
+        const jobs = [loadHealth, loadRuntime, loadSystem, loadServices];
+
+        for (let i = 0; i < jobs.length; i++) {
+          if (document.hidden) break;
+          if (i > 0) await wait(CARD_REFRESH_STAGGER_MS);
+          await Promise.allSettled([jobs[i]()]);
+        }
+      } finally {
+        runningCards = false;
+      }
+    }
+
+    function scheduleCards() {
+      clearTimeout(cardTimer);
+      if (document.hidden) return;
+
+      nextCardsAt = Date.now() + CARD_REFRESH_INTERVAL_MS;
+      cardTimer = setTimeout(async () => {
+        const started = Date.now();
+        await runCards();
+        const elapsed = Date.now() - started;
+        nextCardsAt = Date.now() + Math.max(0, CARD_REFRESH_INTERVAL_MS - elapsed);
+        scheduleCards();
+      }, CARD_REFRESH_INTERVAL_MS);
+    }
+
+    function scheduleHistory() {
+      clearTimeout(historyTimer);
+      if (document.hidden) return;
+
+      historyTimer = setTimeout(async () => {
+        await loadHistory();
+        scheduleHistory();
+      }, HISTORY_INTERVAL_MS);
+    }
+
+    function updateCountdown() {
+      if (document.hidden || !nextCardsAt) {
+        el.refreshCountdown.textContent = "pausada";
+        return;
+      }
+
+      const seconds = Math.max(0, Math.ceil((nextCardsAt - Date.now()) / 1000));
+      el.refreshCountdown.textContent = seconds + "s";
+    }
+
+    async function refreshAll() {
+      el.refreshButton.disabled = true;
+      el.refreshButton.textContent = "Atualizando...";
+
+      try {
+        await Promise.allSettled([runCards(), loadHistory()]);
+      } finally {
+        el.refreshButton.disabled = false;
+        el.refreshButton.textContent = "Atualizar dados";
+        scheduleCards();
+        scheduleHistory();
+      }
+    }
+
+    el.refreshButton.addEventListener("click", refreshAll);
+
+    el.historyFilters.forEach(button => {
+      button.addEventListener("click", async () => {
+        const hours = Number(button.dataset.hours);
+        if (!ALLOWED_HISTORY_HOURS.has(hours) || hours === currentHistoryHours) return;
+
+        currentHistoryHours = hours;
+
+        el.historyFilters.forEach(item => {
+          item.setAttribute("aria-pressed", String(item === button));
+        });
+
+        await loadHistory();
+        scheduleHistory();
+      });
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        clearTimeout(cardTimer);
+        clearTimeout(historyTimer);
+        nextCardsAt = null;
+        el.autoRefreshLabel.textContent = "Atualização automática pausada";
+        el.refreshCountdown.textContent = "pausada";
+      } else {
+        el.autoRefreshLabel.textContent = "Atualização automática ativa";
+        refreshAll();
+      }
+    });
+
+    window.addEventListener("resize", () => {
+      clearTimeout(window.__opslabResizeTimer);
+      window.__opslabResizeTimer = setTimeout(() => {
+        if (lastHistoryPoints.length) renderHistory(lastHistoryPoints);
+      }, 150);
+    });
+
+    countdownTimer = setInterval(updateCountdown, 1000);
+
+    refreshAll();
+
+    const infrastructureTerminal = document.querySelector(".terminal");
+
+    if (
+      infrastructureTerminal &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      infrastructureTerminal.addEventListener("pointermove", (event) => {
+        const rect = infrastructureTerminal.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width - 0.5;
+        const y = (event.clientY - rect.top) / rect.height - 0.5;
+
+        infrastructureTerminal.style.transform =
+          `perspective(1200px) rotateX(${-y * 2.2}deg) rotateY(${x * 2.8}deg) translateY(-3px)`;
+      }, { passive: true });
+
+      infrastructureTerminal.addEventListener("pointerleave", () => {
+        infrastructureTerminal.style.transform = "";
+      });
+    }
+  </script>
+
+  <script>
+    (() => {
+      const payload = {
+        path: "/opslab/",
+        referrer: document.referrer || "",
+        language: navigator.language || "",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        screenWidth: window.screen?.width || null,
+        screenHeight: window.screen?.height || null
+      };
+
+      fetch("/api/analytics/pageview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(() => {});
+    })();
+  </script>
 </body>
 </html>

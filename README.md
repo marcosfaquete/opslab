@@ -6,15 +6,15 @@ O projeto nasceu da curiosidade de entender, na prática, o que existe por trás
 
 > **UNDERSTAND → EXECUTE → TEST → DOCUMENT → COMMIT**
 
-**Status atual:** marco **OpsLab v1 concluído**.  
+**Status atual:** marco **OpsLab v1 concluído**.
 O laboratório continua aberto para novas evoluções.
 
 ---
 
 ## Live Lab
 
-**Marcos Lab:** [http://marcosfaquete.com.br/](http://marcosfaquete.com.br/)  
-**OpsLab:** [http://marcosfaquete.com.br/opslab/](http://marcosfaquete.com.br/opslab/)
+**Marcos Lab:** [https://marcosfaquete.com.br/](https://marcosfaquete.com.br/)
+**OpsLab:** [https://marcosfaquete.com.br/opslab/](https://marcosfaquete.com.br/opslab/)
 
 O frontend do OpsLab consulta dados reais da infraestrutura através da API executada na própria VPS.
 
@@ -32,6 +32,7 @@ Durante o projeto foram praticados conceitos relacionados a:
 - DNS;
 - servidor web;
 - reverse proxy;
+- HTTPS/TLS com Let's Encrypt e Certbot;
 - backend;
 - gerenciamento de processos;
 - PostgreSQL e persistência;
@@ -293,7 +294,9 @@ Entre as decisões aplicadas:
 - uso de `sudo` para elevação de privilégio;
 - UFW ativo;
 - somente portas necessárias expostas;
-- Nginx concentrando a entrada HTTP;
+- Nginx concentrando a entrada HTTP/HTTPS;
+- certificado TLS emitido pelo Let's Encrypt e administrado com Certbot;
+- redirecionamento de HTTP para HTTPS;
 - Node.js limitado ao loopback;
 - PostgreSQL limitado ao loopback;
 - role PostgreSQL dedicada à aplicação;
@@ -477,7 +480,6 @@ Significa que o objetivo inicial — compreender e operar uma infraestrutura Lin
 
 As seguintes tecnologias e práticas podem ser estudadas futuramente, mas **não representam funcionalidades já implementadas**:
 
-- HTTPS;
 - estratégia formal de backup;
 - teste completo de restore;
 - CI/CD;

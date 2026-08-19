@@ -1,0 +1,2931 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>Marcos Lab Analytics</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #05070d;
+      --panel: rgba(11, 17, 27, .82);
+      --panel-strong: rgba(8, 13, 21, .96);
+      --line: rgba(139, 158, 186, .15);
+      --line-strong: rgba(139, 158, 186, .25);
+
+      --text: #eef3f8;
+      --muted: #8b99ad;
+      --muted-2: #59677d;
+
+      --cyan: #55d6ff;
+      --green: #62e6a7;
+      --violet: #9f8cff;
+      --amber: #f6c76a;
+
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(85, 214, 255, .09), transparent 30rem),
+        radial-gradient(circle at 88% 5%, rgba(159, 140, 255, .07), transparent 30rem),
+        linear-gradient(180deg, #05070d, #070b12 50%, #05070d);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, #000, transparent 92%);
+    }
+
+    .shell {
+      position: relative;
+      z-index: 1;
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 1px solid var(--line);
+      background: rgba(5,7,13,.78);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      min-height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: -.04em;
+    }
+
+    .brand strong {
+      color: var(--green);
+    }
+
+    .private {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font: .68rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    .private::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 12px rgba(246,199,106,.6);
+    }
+
+    main {
+      padding: 78px 0 100px;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font: .7rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .17em;
+    }
+
+    h1 {
+      margin-top: 16px;
+      font-size: clamp(3rem, 7vw, 6.7rem);
+      line-height: .9;
+      letter-spacing: -.065em;
+    }
+
+    h1 span {
+      display: block;
+      color: transparent;
+      background: linear-gradient(90deg, #d8fff1, var(--cyan), var(--violet));
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .intro {
+      max-width: 670px;
+      margin-top: 25px;
+      color: var(--muted);
+      line-height: 1.75;
+    }
+
+    .statusbar {
+      margin-top: 34px;
+      padding: 13px 15px;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(8,13,22,.66);
+      color: var(--muted-2);
+      font: .66rem var(--mono);
+    }
+
+    #status {
+      color: var(--green);
+    }
+
+    .section {
+      margin-top: 58px;
+    }
+
+    .section-label {
+      margin-bottom: 15px;
+      color: #6f86a4;
+      font: .66rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .15em;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(8,13,22,.72);
+    }
+
+    .card {
+      position: relative;
+      min-height: 170px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      isolation: isolate;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      background:
+        linear-gradient(
+          105deg,
+          transparent 18%,
+          rgba(85, 214, 255, .018) 34%,
+          rgba(216, 255, 241, .10) 49%,
+          rgba(159, 140, 255, .045) 60%,
+          transparent 78%
+        );
+      transform: translateX(-130%);
+      animation:
+        analyticsSweep var(--sweep-duration, 13s)
+        cubic-bezier(.35,.05,.2,1)
+        var(--sweep-delay, 0s)
+        infinite;
+    }
+
+    .card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card:nth-child(3n) {
+      border-right: 0;
+    }
+
+    .card:nth-child(-n+3) {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .card-label {
+      width: 100%;
+      color: var(--muted-2);
+      font: .63rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      text-align: center;
+    }
+
+    .card-value {
+      width: 100%;
+      margin-top: 24px;
+      font-size: clamp(2.4rem, 5vw, 4rem);
+      line-height: 1;
+      letter-spacing: -.06em;
+      font-weight: 760;
+      text-align: center;
+    }
+
+    .card-foot {
+      width: 100%;
+      margin-top: 14px;
+      color: var(--muted);
+      font: .67rem var(--mono);
+      text-align: center;
+    }
+
+    .cyan { color: var(--cyan); }
+    .green { color: var(--green); }
+    .violet { color: var(--violet); }
+    .amber { color: var(--amber); }
+
+    .periods {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(8,13,22,.72);
+    }
+
+    .period {
+      position: relative;
+      min-height: 142px;
+      padding: 22px;
+      border-right: 1px solid var(--line);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      isolation: isolate;
+    }
+
+    .period::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      background:
+        linear-gradient(
+          105deg,
+          transparent 18%,
+          rgba(85, 214, 255, .018) 34%,
+          rgba(216, 255, 241, .09) 49%,
+          rgba(159, 140, 255, .04) 60%,
+          transparent 78%
+        );
+      transform: translateX(-130%);
+      animation:
+        analyticsSweep var(--sweep-duration, 14s)
+        cubic-bezier(.35,.05,.2,1)
+        var(--sweep-delay, 0s)
+        infinite;
+    }
+
+    .period > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .period:last-child {
+      border-right: 0;
+    }
+
+    .period h3 {
+      width: 100%;
+      color: var(--muted);
+      font: .65rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      text-align: center;
+    }
+
+    .period strong {
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      font-size: 2rem;
+      text-align: center;
+    }
+
+    .period p {
+      width: 100%;
+      margin-top: 8px;
+      color: var(--muted-2);
+      font-size: .72rem;
+      text-align: center;
+    }
+
+    @keyframes analyticsSweep {
+      0%, 68% {
+        opacity: 0;
+        transform: translateX(-130%);
+      }
+
+      72% {
+        opacity: .18;
+      }
+
+      82% {
+        opacity: .95;
+      }
+
+      92% {
+        opacity: .18;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateX(130%);
+      }
+    }
+
+
+    /* =========================================================
+       ACESSOS DETALHADOS — histórico bruto com carregamento
+       progressivo conforme a rolagem.
+       ========================================================= */
+
+    .access-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 15px;
+    }
+
+    .access-copy {
+      max-width: 670px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: .78rem;
+      line-height: 1.65;
+    }
+
+    .access-counter {
+      flex: 0 0 auto;
+      color: var(--muted-2);
+      font: .65rem var(--mono);
+      white-space: nowrap;
+    }
+
+    .access-counter strong {
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    .access-list {
+      overflow-x: hidden;
+      overflow-y: auto;
+      max-height: 900px;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(8,13,22,.72);
+    }
+
+    .access-row {
+      position: relative;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+      transition: background .2s ease;
+    }
+
+    .access-row:last-child {
+      border-bottom: 0;
+    }
+
+    .access-row:hover {
+      background: rgba(85,214,255,.025);
+    }
+
+    .access-row::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background:
+        linear-gradient(
+          105deg,
+          transparent 18%,
+          rgba(85,214,255,.012) 36%,
+          rgba(216,255,241,.055) 49%,
+          rgba(159,140,255,.025) 61%,
+          transparent 80%
+        );
+      transform: translateX(-130%);
+      animation:
+        accessSweep var(--row-sweep-duration, 17s)
+        cubic-bezier(.35,.05,.2,1)
+        var(--row-sweep-delay, 0s)
+        infinite;
+    }
+
+    @keyframes accessSweep {
+      0%, 76% {
+        opacity: 0;
+        transform: translateX(-130%);
+      }
+      82% { opacity: .55; }
+      94% { opacity: .12; }
+      100% {
+        opacity: 0;
+        transform: translateX(130%);
+      }
+    }
+
+    .access-row > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .access-row-top {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .access-id {
+      color: var(--cyan);
+      font: .68rem var(--mono);
+    }
+
+    .access-path {
+      min-width: 0;
+      color: var(--text);
+      font: 700 .86rem var(--mono);
+      overflow-wrap: anywhere;
+    }
+
+    .access-time {
+      color: var(--muted);
+      font: .64rem var(--mono);
+      white-space: nowrap;
+    }
+
+    .access-meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px 22px;
+      margin-top: 18px;
+    }
+
+    .access-field {
+      min-width: 0;
+    }
+
+    .access-field-label {
+      color: var(--muted-2);
+      font: .57rem var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .11em;
+    }
+
+    .access-field-value {
+      margin-top: 5px;
+      color: #b8c5d5;
+      font: .68rem var(--mono);
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .access-field-value strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .nav-badge {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      max-width: 100%;
+      padding: 4px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #aab8ca;
+      background: rgba(255,255,255,.014);
+      font: .6rem var(--mono);
+    }
+
+    .nav-badge[data-type="reload"] {
+      color: var(--amber);
+      border-color: rgba(246,199,106,.18);
+      background: rgba(246,199,106,.035);
+    }
+
+    .nav-badge[data-type="navigate"] {
+      color: var(--green);
+      border-color: rgba(98,230,167,.16);
+      background: rgba(98,230,167,.03);
+    }
+
+    .access-wide {
+      grid-column: 1 / -1;
+      padding-top: 2px;
+    }
+
+    .access-user-agent {
+      margin-top: 6px;
+      padding: 9px 11px;
+      border: 1px solid rgba(139,158,186,.09);
+      border-radius: 9px;
+      color: #6f7e93;
+      background: rgba(4,8,14,.38);
+      font: .61rem var(--mono);
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .access-loader {
+      display: grid;
+      place-items: center;
+      min-height: 78px;
+      padding: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted-2);
+      font: .64rem var(--mono);
+      text-align: center;
+    }
+
+    .access-loader[data-state="loading"] {
+      color: var(--cyan);
+    }
+
+    .load-more {
+      margin-top: 14px;
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(8,13,22,.65);
+      color: #aab8ca;
+      cursor: pointer;
+      font: .66rem var(--mono);
+      transition: border-color .2s ease, color .2s ease, background .2s ease;
+    }
+
+    .load-more:hover:not(:disabled) {
+      color: var(--text);
+      border-color: rgba(85,214,255,.35);
+      background: rgba(85,214,255,.035);
+    }
+
+    .load-more:disabled {
+      opacity: .45;
+      cursor: default;
+    }
+
+    @media (max-width: 900px) {
+      .access-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .access-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .access-row {
+        padding: 18px 16px;
+      }
+
+      .access-row-top {
+        grid-template-columns: auto 1fr;
+      }
+
+      .access-time {
+        grid-column: 1 / -1;
+        white-space: normal;
+      }
+
+      .access-meta {
+        grid-template-columns: 1fr;
+        gap: 13px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .access-row::after {
+        animation: none;
+        opacity: 0;
+      }
+    }
+
+    footer {
+      padding: 28px 0 40px;
+      border-top: 1px solid var(--line);
+      color: var(--muted-2);
+      text-align: center;
+      font: .61rem var(--mono);
+      letter-spacing: .08em;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card::after,
+      .period::after {
+        animation: none;
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .card {
+        border-bottom: 1px solid var(--line);
+      }
+
+      .card:nth-child(3n) {
+        border-right: 1px solid var(--line);
+      }
+
+      .card:nth-child(2n) {
+        border-right: 0;
+      }
+
+      .card:nth-last-child(-n+2) {
+        border-bottom: 0;
+      }
+
+      .periods {
+        grid-template-columns: 1fr;
+      }
+
+      .period {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .period:last-child {
+        border-bottom: 0;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .card,
+      .card:nth-child(3n),
+      .card:nth-child(2n) {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .card:last-child {
+        border-bottom: 0;
+      }
+    }
+  </style>
+
+<style>
+  /* ENGAGEMENT_RANKING_V1 */
+
+  .engagement-ranking-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 18px;
+  }
+
+  .engagement-ranking-copy {
+    max-width: 700px;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: .78rem;
+    line-height: 1.65;
+  }
+
+  .engagement-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .engagement-control-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 5px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(8,13,22,.68);
+  }
+
+  .engagement-filter {
+    appearance: none;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px 11px;
+    color: var(--muted);
+    background: transparent;
+    cursor: pointer;
+    font: .62rem var(--mono);
+    transition:
+      color .2s ease,
+      border-color .2s ease,
+      background .2s ease;
+  }
+
+  .engagement-filter:hover {
+    color: var(--text);
+    background: rgba(255,255,255,.025);
+  }
+
+  .engagement-filter[data-active="true"] {
+    color: var(--green);
+    border-color: rgba(106,240,170,.20);
+    background: rgba(106,240,170,.045);
+  }
+
+  .engagement-ranking-list {
+    display: grid;
+    gap: 10px;
+    max-height: 690px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding-right: 6px;
+  }
+
+  .engagement-ranking-row {
+    position: relative;
+    display: grid;
+    grid-template-columns:
+      auto
+      minmax(90px, .7fr)
+      minmax(170px, 1.7fr)
+      repeat(5, minmax(88px, .68fr));
+    align-items: center;
+    gap: 16px;
+
+    padding: 16px 18px;
+
+    border: 1px solid var(--line);
+    border-radius: 14px;
+
+    background: rgba(8,13,22,.72);
+
+    overflow: hidden;
+  }
+
+  .engagement-rank {
+    color: var(--muted-2);
+    font: .62rem var(--mono);
+  }
+
+  .engagement-path {
+    min-width: 0;
+    color: var(--text);
+    font: 700 .76rem var(--mono);
+    overflow-wrap: anywhere;
+  }
+
+  .engagement-score-block {
+    min-width: 0;
+  }
+
+  .engagement-score-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .engagement-score-value {
+    color: var(--green);
+    font: 700 .72rem var(--mono);
+  }
+
+  .engagement-score-label {
+    color: var(--muted-2);
+    font: .55rem var(--mono);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+
+  .engagement-score-track {
+    height: 4px;
+    margin-top: 7px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255,255,255,.055);
+  }
+
+  .engagement-score-fill {
+    height: 100%;
+    border-radius: inherit;
+    background:
+      linear-gradient(
+        90deg,
+        var(--cyan),
+        var(--green)
+      );
+  }
+
+  .engagement-metric-label {
+    color: var(--muted-2);
+    font: .54rem var(--mono);
+    text-transform: uppercase;
+    letter-spacing: .09em;
+  }
+
+  .engagement-metric-value {
+    margin-top: 4px;
+    color: #b8c5d5;
+    font: .67rem var(--mono);
+  }
+
+  .engagement-ranking-meta {
+    margin-top: 5px;
+    color: var(--muted-2);
+    font: .55rem var(--mono);
+  }
+
+  .engagement-ranking-status {
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--muted);
+    background: rgba(8,13,22,.72);
+    text-align: center;
+    font: .66rem var(--mono);
+  }
+
+  @media (max-width: 900px) {
+    .engagement-ranking-row {
+      grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        minmax(150px, 1.4fr);
+    }
+
+    .engagement-ranking-row .engagement-metric {
+      grid-column: span 1;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .engagement-ranking-head {
+      display: block;
+    }
+
+    .engagement-ranking-row {
+      grid-template-columns:
+        auto
+        minmax(0, 1fr);
+    }
+
+    .engagement-score-block {
+      grid-column: 1 / -1;
+    }
+
+    .engagement-metric {
+      padding-top: 4px;
+    }
+  }
+</style>
+
+
+<style>
+  /* =========================================================
+     DESIGN ANALYTICS — DESKTOP SCALE V1
+     Aproxima a presença visual do navegador em 125%,
+     sem usar CSS zoom e sem alterar o comportamento mobile.
+     ========================================================= */
+
+  @media (min-width: 1000px) {
+    .shell {
+      width: min(1475px, calc(100% - 56px));
+    }
+
+    .topbar {
+      min-height: 82px;
+    }
+
+    main {
+      padding: 96px 0 122px;
+    }
+
+    .eyebrow {
+      font-size: .82rem;
+    }
+
+    h1 {
+      margin-top: 20px;
+      font-size: clamp(4rem, 8.2vw, 8.25rem);
+    }
+
+    .intro {
+      max-width: 820px;
+      margin-top: 30px;
+      font-size: 1.05rem;
+      line-height: 1.8;
+    }
+
+    .statusbar {
+      margin-top: 40px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      font-size: .75rem;
+    }
+
+    .section {
+      margin-top: 72px;
+    }
+
+    .section-label {
+      margin-bottom: 18px;
+      font-size: .76rem;
+    }
+
+    .cards {
+      border-radius: 20px;
+    }
+
+    .card {
+      min-height: 208px;
+      padding: 28px;
+    }
+
+    .card-label {
+      font-size: .72rem;
+    }
+
+    .card-value {
+      margin-top: 28px;
+      font-size: clamp(3rem, 5.8vw, 4.9rem);
+    }
+
+    .card-foot {
+      margin-top: 17px;
+      font-size: .77rem;
+    }
+
+    .periods {
+      border-radius: 20px;
+    }
+
+    .period {
+      min-height: 174px;
+      padding: 28px;
+    }
+
+    .period h3 {
+      font-size: .75rem;
+    }
+
+    .period strong {
+      margin-top: 21px;
+      font-size: 2.5rem;
+    }
+
+    .period p {
+      margin-top: 10px;
+      font-size: .84rem;
+    }
+
+    .engagement-ranking-head {
+      gap: 28px;
+      margin-bottom: 22px;
+    }
+
+    #engagement-ranking-title,
+    #access-log-title {
+      font-size: 1.9rem;
+      line-height: 1.15;
+    }
+
+    .engagement-ranking-copy,
+    .access-copy {
+      max-width: 850px;
+      margin-top: 10px;
+      font-size: .92rem;
+      line-height: 1.7;
+    }
+
+    .engagement-controls {
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .engagement-control-group {
+      gap: 7px;
+      padding: 6px;
+      border-radius: 14px;
+    }
+
+    .engagement-filter {
+      padding: 10px 14px;
+      border-radius: 9px;
+      font-size: .72rem;
+    }
+
+    .engagement-ranking-list {
+      gap: 12px;
+    }
+
+    .engagement-ranking-row {
+      grid-template-columns:
+        auto
+        minmax(110px, .7fr)
+        minmax(205px, 1.7fr)
+        repeat(5, minmax(104px, .68fr));
+      gap: 19px;
+      padding: 20px 22px;
+      border-radius: 16px;
+    }
+
+    .engagement-rank {
+      font-size: .72rem;
+    }
+
+    .engagement-path {
+      font-size: .88rem;
+    }
+
+    .engagement-score-value {
+      font-size: .84rem;
+    }
+
+    .engagement-score-label {
+      font-size: .63rem;
+    }
+
+    .engagement-score-track {
+      height: 5px;
+      margin-top: 9px;
+    }
+
+    .engagement-metric-label {
+      font-size: .62rem;
+    }
+
+    .engagement-metric-value {
+      margin-top: 5px;
+      font-size: .77rem;
+    }
+
+    .engagement-ranking-meta {
+      margin-top: 6px;
+      font-size: .63rem;
+    }
+
+    .engagement-ranking-status {
+      padding: 22px;
+      border-radius: 16px;
+      font-size: .76rem;
+    }
+
+    .access-head {
+      gap: 28px;
+      margin-bottom: 18px;
+    }
+
+    .access-counter {
+      font-size: .74rem;
+    }
+
+    .access-list {
+      border-radius: 20px;
+    }
+
+    .access-row {
+      padding: 24px 27px;
+    }
+
+    .access-row-top {
+      gap: 15px;
+    }
+
+    .access-id {
+      font-size: .78rem;
+    }
+
+    .access-path {
+      font-size: 1rem;
+    }
+
+    .access-time {
+      font-size: .74rem;
+    }
+
+    .access-meta {
+      gap: 20px 27px;
+      margin-top: 22px;
+    }
+
+    .access-field-label {
+      font-size: .66rem;
+    }
+
+    .access-field-value {
+      margin-top: 6px;
+      font-size: .79rem;
+      line-height: 1.55;
+    }
+
+    .nav-badge {
+      padding: 5px 9px;
+      font-size: .69rem;
+    }
+
+    .access-user-agent {
+      margin-top: 7px;
+      padding: 11px 13px;
+      border-radius: 10px;
+      font-size: .7rem;
+      line-height: 1.6;
+    }
+
+    .access-loader {
+      min-height: 92px;
+      padding: 22px;
+      font-size: .74rem;
+    }
+
+    .load-more {
+      margin-top: 17px;
+      padding: 13px 17px;
+      border-radius: 11px;
+      font-size: .76rem;
+    }
+
+    footer {
+      padding: 34px 0 48px;
+      font-size: .7rem;
+    }
+  }
+
+  /* Em notebooks/intermediários, amplia sem chegar ao tamanho do desktop Full HD. */
+  @media (min-width: 821px) and (max-width: 999px) {
+    .shell {
+      width: min(100% - 44px, 900px);
+    }
+
+    main {
+      padding-top: 86px;
+    }
+
+    .intro {
+      font-size: 1rem;
+    }
+
+    .section-label,
+    .card-label,
+    .period h3 {
+      font-size: .7rem;
+    }
+
+    .card-foot,
+    .period p {
+      font-size: .74rem;
+    }
+  }
+</style>
+
+
+<style>
+  /* DESIGN ANALYTICS — ENGAGEMENT SCALE V2
+     Aumenta exclusivamente a seção "Acessos mais engajados". */
+
+  @media (min-width: 1000px) {
+    .engagement-ranking-head { margin-bottom: 26px; }
+
+    .engagement-ranking-head .section-label {
+      margin-bottom: 16px;
+      font-size: .86rem;
+      letter-spacing: .16em;
+    }
+
+    #engagement-ranking-title {
+      font-size: 2.35rem;
+      line-height: 1.1;
+      letter-spacing: -.025em;
+    }
+
+    .engagement-ranking-copy {
+      max-width: 980px;
+      margin-top: 13px;
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    .engagement-controls {
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .engagement-control-group {
+      gap: 8px;
+      padding: 7px;
+      border-radius: 15px;
+    }
+
+    .engagement-filter {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: .84rem;
+      line-height: 1.2;
+    }
+
+    .engagement-ranking-list { gap: 15px; }
+
+    .engagement-ranking-row {
+      min-height: 126px;
+      grid-template-columns:
+        34px
+        minmax(150px, .9fr)
+        minmax(280px, 1.8fr)
+        repeat(5, minmax(118px, .72fr));
+      gap: 22px;
+      padding: 26px 28px;
+      border-radius: 18px;
+    }
+
+    .engagement-rank { font-size: .86rem; }
+
+    .engagement-path {
+      font-size: 1.06rem;
+      line-height: 1.35;
+    }
+
+    .engagement-ranking-meta {
+      margin-top: 8px;
+      font-size: .75rem;
+      line-height: 1.45;
+    }
+
+    .engagement-score-value { font-size: 1rem; }
+
+    .engagement-score-label {
+      font-size: .72rem;
+      letter-spacing: .1em;
+    }
+
+    .engagement-score-track {
+      height: 6px;
+      margin-top: 11px;
+    }
+
+    .engagement-metric-label {
+      font-size: .71rem;
+      letter-spacing: .1em;
+      line-height: 1.3;
+    }
+
+    .engagement-metric-value {
+      margin-top: 7px;
+      font-size: .94rem;
+      line-height: 1.35;
+    }
+
+    .engagement-ranking-status {
+      padding: 26px;
+      border-radius: 18px;
+      font-size: .88rem;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 999px) {
+    .engagement-ranking-head .section-label { font-size: .78rem; }
+    #engagement-ranking-title { font-size: 2rem; }
+    .engagement-ranking-copy { font-size: .98rem; }
+
+    .engagement-filter {
+      padding: 10px 14px;
+      font-size: .78rem;
+    }
+
+    .engagement-ranking-row {
+      gap: 18px;
+      padding: 22px 20px;
+    }
+
+    .engagement-rank { font-size: .8rem; }
+    .engagement-path { font-size: .98rem; }
+    .engagement-ranking-meta { font-size: .7rem; }
+    .engagement-score-value { font-size: .92rem; }
+
+    .engagement-score-label,
+    .engagement-metric-label { font-size: .68rem; }
+
+    .engagement-metric-value { font-size: .88rem; }
+  }
+
+  @media (max-width: 640px) {
+    #engagement-ranking-title { font-size: 1.8rem; }
+
+    .engagement-ranking-copy {
+      font-size: .93rem;
+      line-height: 1.65;
+    }
+
+    .engagement-controls {
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .engagement-control-group {
+      gap: 6px;
+      padding: 6px;
+    }
+
+    .engagement-filter {
+      padding: 10px 12px;
+      font-size: .74rem;
+    }
+
+    .engagement-ranking-list { gap: 12px; }
+
+    .engagement-ranking-row {
+      gap: 14px;
+      padding: 20px 17px;
+    }
+
+    .engagement-rank { font-size: .78rem; }
+    .engagement-path { font-size: .96rem; }
+
+    .engagement-ranking-meta {
+      margin-top: 7px;
+      font-size: .68rem;
+      line-height: 1.45;
+    }
+
+    .engagement-score-value { font-size: .9rem; }
+    .engagement-score-label { font-size: .66rem; }
+
+    .engagement-score-track {
+      height: 5px;
+      margin-top: 9px;
+    }
+
+    .engagement-metric-label { font-size: .65rem; }
+
+    .engagement-metric-value {
+      margin-top: 6px;
+      font-size: .84rem;
+    }
+  }
+</style>
+
+
+<style>
+  /* =========================================================
+     DESIGN ANALYTICS — ENGAGEMENT TYPOGRAPHY V3
+     Reforça exclusivamente a leitura dentro dos cards
+     de "Acessos mais engajados".
+     ========================================================= */
+
+  .engagement-ranking-row .engagement-rank {
+    color: #8392a7;
+    font-size: .94rem;
+    font-weight: 700;
+  }
+
+  .engagement-ranking-row .engagement-path {
+    color: var(--text);
+    font-size: 1.18rem;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .engagement-ranking-row .engagement-ranking-meta {
+    color: #8190a5;
+    margin-top: 8px;
+    font-size: .82rem;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .engagement-ranking-row .engagement-score-value {
+    color: var(--green);
+    font-size: 1.08rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+  }
+
+  .engagement-ranking-row .engagement-score-label {
+    color: #8392a7;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .11em;
+  }
+
+  .engagement-ranking-row .engagement-metric-label {
+    color: #7d8ca2;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .105em;
+    line-height: 1.35;
+  }
+
+  .engagement-ranking-row .engagement-metric-value {
+    color: #d5deea;
+    margin-top: 7px;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .engagement-ranking-row .engagement-score-track {
+    margin-top: 11px;
+  }
+
+  @media (min-width: 1000px) {
+    .engagement-ranking-row .engagement-rank {
+      font-size: .96rem;
+    }
+
+    .engagement-ranking-row .engagement-path {
+      font-size: 1.2rem;
+    }
+
+    .engagement-ranking-row .engagement-ranking-meta {
+      font-size: .83rem;
+    }
+
+    .engagement-ranking-row .engagement-score-value {
+      font-size: 1.1rem;
+    }
+
+    .engagement-ranking-row .engagement-score-label,
+    .engagement-ranking-row .engagement-metric-label {
+      font-size: .79rem;
+    }
+
+    .engagement-ranking-row .engagement-metric-value {
+      font-size: 1.02rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .engagement-ranking-row .engagement-rank {
+      font-size: .84rem;
+    }
+
+    .engagement-ranking-row .engagement-path {
+      font-size: 1.04rem;
+    }
+
+    .engagement-ranking-row .engagement-ranking-meta {
+      font-size: .73rem;
+    }
+
+    .engagement-ranking-row .engagement-score-value {
+      font-size: .96rem;
+    }
+
+    .engagement-ranking-row .engagement-score-label,
+    .engagement-ranking-row .engagement-metric-label {
+      font-size: .69rem;
+    }
+
+    .engagement-ranking-row .engagement-metric-value {
+      font-size: .9rem;
+    }
+  }
+</style>
+
+
+<style>
+  /* =========================================================
+     DESIGN ANALYTICS — ACCESS HISTORY TYPOGRAPHY V4
+     Reforça exclusivamente a leitura dentro dos cards
+     de "Histórico do banco".
+     ========================================================= */
+
+  .access-row .access-id {
+    color: var(--cyan);
+    font-size: .92rem;
+    font-weight: 800;
+  }
+
+  .access-row .access-path {
+    color: var(--text);
+    font-size: 1.18rem;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
+  .access-row .access-time {
+    color: #a3b0c2;
+    font-size: .84rem;
+    font-weight: 600;
+  }
+
+  .access-row .access-field-label {
+    color: #8291a8;
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .11em;
+    line-height: 1.35;
+  }
+
+  .access-row .access-field-value {
+    color: #d5deea;
+    margin-top: 8px;
+    font-size: .96rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .access-row .access-field-value strong {
+    color: var(--text);
+    font-weight: 800;
+  }
+
+  .access-row .nav-badge {
+    margin-top: 8px;
+    padding: 6px 10px;
+    font-size: .82rem;
+    font-weight: 800;
+  }
+
+  .access-row .access-user-agent {
+    color: #9aa9bd;
+    margin-top: 9px;
+    padding: 13px 15px;
+    font-size: .79rem;
+    font-weight: 600;
+    line-height: 1.65;
+  }
+
+  @media (min-width: 1000px) {
+    .access-row {
+      padding: 28px 30px;
+    }
+
+    .access-row-top {
+      gap: 18px;
+    }
+
+    .access-meta {
+      gap: 24px 30px;
+      margin-top: 25px;
+    }
+
+    .access-row .access-id {
+      font-size: .94rem;
+    }
+
+    .access-row .access-path {
+      font-size: 1.2rem;
+    }
+
+    .access-row .access-time {
+      font-size: .86rem;
+    }
+
+    .access-row .access-field-label {
+      font-size: .78rem;
+    }
+
+    .access-row .access-field-value {
+      font-size: .98rem;
+    }
+
+    .access-row .nav-badge {
+      font-size: .84rem;
+    }
+
+    .access-row .access-user-agent {
+      font-size: .81rem;
+    }
+  }
+
+  @media (min-width: 621px) and (max-width: 999px) {
+    .access-row .access-id {
+      font-size: .86rem;
+    }
+
+    .access-row .access-path {
+      font-size: 1.08rem;
+    }
+
+    .access-row .access-time {
+      font-size: .79rem;
+    }
+
+    .access-row .access-field-label {
+      font-size: .72rem;
+    }
+
+    .access-row .access-field-value {
+      font-size: .9rem;
+    }
+
+    .access-row .nav-badge {
+      font-size: .77rem;
+    }
+
+    .access-row .access-user-agent {
+      font-size: .75rem;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .access-row .access-id {
+      font-size: .82rem;
+    }
+
+    .access-row .access-path {
+      font-size: 1.04rem;
+    }
+
+    .access-row .access-time {
+      font-size: .76rem;
+      line-height: 1.45;
+    }
+
+    .access-row .access-field-label {
+      font-size: .68rem;
+    }
+
+    .access-row .access-field-value {
+      margin-top: 6px;
+      font-size: .88rem;
+    }
+
+    .access-row .nav-badge {
+      margin-top: 6px;
+      font-size: .74rem;
+    }
+
+    .access-row .access-user-agent {
+      font-size: .72rem;
+    }
+  }
+</style>
+
+</head>
+
+<body>
+<header>
+  <div class="shell topbar">
+    <div class="brand">Marcos <strong>Lab</strong> Analytics</div>
+    <div class="private">private dashboard</div>
+  </div>
+</header>
+
+<main class="shell">
+  <div class="eyebrow">Analytics próprio</div>
+
+  <h1>
+    Tráfego
+    <span>em números.</span>
+  </h1>
+
+  <p class="intro">
+    Visão dos acessos ao Marcos Lab e OpsLab,
+    com visitantes, sessões e carregamentos de página.
+  </p>
+
+  <div class="statusbar">
+    <span id="status">consultando analytics...</span>
+    <span>Atualização automática · 30s</span>
+    <span id="generated">aguardando</span>
+  </div>
+
+  <section class="section">
+    <div class="section-label">Hoje</div>
+
+    <div class="cards">
+      <article class="card">
+        <div class="card-label">Pageviews</div>
+        <div class="card-value cyan" id="pageviews-today">—</div>
+        <div class="card-foot">carregamentos de página</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">Visitantes</div>
+        <div class="card-value green" id="visitors-today">—</div>
+        <div class="card-foot">navegadores únicos</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">Sessões</div>
+        <div class="card-value violet" id="sessions-today">—</div>
+        <div class="card-foot">visitas identificadas</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">Reloads</div>
+        <div class="card-value amber" id="reloads-today">—</div>
+        <div class="card-foot">atualizações da página</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">Home</div>
+        <div class="card-value" id="home-today">—</div>
+        <div class="card-foot">pageviews hoje</div>
+      </article>
+
+      <article class="card">
+        <div class="card-label">OpsLab</div>
+        <div class="card-value" id="opslab-today">—</div>
+        <div class="card-foot">pageviews hoje</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-label">Visão acumulada</div>
+
+    <div class="periods">
+      <article class="period">
+        <h3>Pageviews</h3>
+        <strong id="pageviews-total">—</strong>
+        <p><span id="pageviews-7d">—</span> nos últimos 7 dias</p>
+      </article>
+
+      <article class="period">
+        <h3>Visitantes</h3>
+        <strong id="visitors-total">—</strong>
+        <p><span id="visitors-7d">—</span> nos últimos 7 dias</p>
+      </article>
+
+      <article class="period">
+        <h3>Sessões</h3>
+        <strong id="sessions-total">—</strong>
+        <p><span id="sessions-7d">—</span> nos últimos 7 dias</p>
+      </article>
+    </div>
+  </section>
+
+
+  <section class="section" aria-labelledby="engagement-ranking-title">
+    <div class="engagement-ranking-head">
+      <div>
+        <div class="section-label">Análise de engajamento</div>
+
+        <h2 id="engagement-ranking-title">
+          Acessos mais engajados
+        </h2>
+
+        <p class="engagement-ranking-copy">
+          Ranking calculado a partir de tempo ativo,
+          profundidade visualizada e páginas acessadas
+          durante a mesma sessão.
+        </p>
+      </div>
+    </div>
+
+    <div class="engagement-controls">
+      <div
+        class="engagement-control-group"
+        aria-label="Ordenação"
+      >
+        <button
+          class="engagement-filter"
+          data-ranking-mode="engaged"
+          data-active="true"
+          type="button"
+        >
+          Engajamento
+        </button>
+
+        <button
+          class="engagement-filter"
+          data-ranking-mode="time"
+          data-active="false"
+          type="button"
+        >
+          Mais tempo
+        </button>
+
+        <button
+          class="engagement-filter"
+          data-ranking-mode="depth"
+          data-active="false"
+          type="button"
+        >
+          Maior profundidade
+        </button>
+      </div>
+
+      <div
+        class="engagement-control-group"
+        aria-label="Período"
+      >
+        <button
+          class="engagement-filter"
+          data-ranking-period="today"
+          data-active="false"
+          type="button"
+        >
+          Hoje
+        </button>
+
+        <button
+          class="engagement-filter"
+          data-ranking-period="7d"
+          data-active="false"
+          type="button"
+        >
+          7 dias
+        </button>
+
+        <button
+          class="engagement-filter"
+          data-ranking-period="30d"
+          data-active="false"
+          type="button"
+        >
+          30 dias
+        </button>
+
+        <button
+          class="engagement-filter"
+          data-ranking-period="all"
+          data-active="true"
+          type="button"
+        >
+          Tudo
+        </button>
+      </div>
+    </div>
+
+    <div
+      class="engagement-ranking-list"
+      id="engagement-ranking-list"
+      aria-live="polite"
+    >
+      <div class="engagement-ranking-status">
+        carregando ranking...
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="access-log-title">
+    <div class="access-head">
+      <div>
+        <div class="section-label">Acessos detalhados</div>
+        <h2 id="access-log-title">Histórico do banco</h2>
+        <p class="access-copy">
+          Pageviews registrados no PostgreSQL, com dados de acesso,
+          dispositivo, origem e navegação.
+        </p>
+      </div>
+
+      <div class="access-counter">
+        carregados · <strong id="access-loaded-count">0</strong>
+      </div>
+    </div>
+
+    <div class="access-list" id="access-list" aria-live="polite">
+      <div class="access-loader" id="access-loader" data-state="loading">
+        carregando primeiros acessos...
+      </div>
+    </div>
+
+    <button class="load-more" id="load-more" type="button">
+      Carregar mais registros
+    </button>
+
+    <div id="access-sentinel" aria-hidden="true"></div>
+  </section>
+</main>
+
+<footer>
+  MARCOS LAB · PRIVATE ANALYTICS · POSTGRESQL / NODE.JS
+</footer>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+
+function randomizeCardSweeps() {
+  const targets = [...document.querySelectorAll(".card, .period")];
+
+  targets.forEach((element) => {
+    const duration = 10 + Math.random() * 9;
+    const delay = Math.random() * 12;
+
+    element.style.setProperty("--sweep-duration", duration.toFixed(2) + "s");
+    element.style.setProperty("--sweep-delay", delay.toFixed(2) + "s");
+  });
+}
+
+function number(value) {
+  return new Intl.NumberFormat("pt-BR").format(value ?? 0);
+}
+
+async function loadAnalytics() {
+  $("status").textContent = "consultando analytics...";
+
+  try {
+    const response = await fetch("/api/analytics/summary", {
+      headers: { "Accept": "application/json" },
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    $("pageviews-today").textContent = number(data.pageviews.today);
+    $("visitors-today").textContent = number(data.visitors.today);
+    $("sessions-today").textContent = number(data.sessions.today);
+    $("reloads-today").textContent = number(data.navigation.reloadsToday);
+
+    $("home-today").textContent = number(data.pages.home.today);
+    $("opslab-today").textContent = number(data.pages.opslab.today);
+
+    $("pageviews-total").textContent = number(data.pageviews.total);
+    $("pageviews-7d").textContent = number(data.pageviews.last7Days);
+
+    $("visitors-total").textContent = number(data.visitors.total);
+    $("visitors-7d").textContent = number(data.visitors.last7Days);
+
+    $("sessions-total").textContent = number(data.sessions.total);
+    $("sessions-7d").textContent = number(data.sessions.last7Days);
+
+    $("status").textContent = "analytics online";
+
+    $("generated").textContent =
+      "gerado " +
+      new Intl.DateTimeFormat("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "medium"
+      }).format(new Date(data.generatedAt));
+
+  } catch {
+    $("status").textContent = "analytics indisponível";
+  }
+}
+
+
+const accessState = {
+  loading: false,
+  hasMore: true,
+  beforeId: null,
+  loaded: 0
+};
+
+function escapeText(value) {
+  return value === null || value === undefined || value === ""
+    ? "—"
+    : String(value);
+}
+
+function shortId(value) {
+  if (!value) return "—";
+  return String(value).slice(0, 8);
+}
+
+function browserName(userAgent) {
+  const ua = userAgent || "";
+
+  const edge = ua.match(/Edg\/([\d.]+)/);
+  if (edge) return "Edge " + edge[1].split(".")[0];
+
+  const firefox = ua.match(/Firefox\/([\d.]+)/);
+  if (firefox) return "Firefox " + firefox[1].split(".")[0];
+
+  const chrome = ua.match(/Chrome\/([\d.]+)/);
+  if (chrome) return "Chrome " + chrome[1].split(".")[0];
+
+  const safari = ua.match(/Version\/([\d.]+).*Safari/);
+  if (safari) return "Safari " + safari[1].split(".")[0];
+
+  return "Outro / não identificado";
+}
+
+function operatingSystem(userAgent) {
+  const ua = userAgent || "";
+
+  if (/Windows NT 10/.test(ua)) return "Windows";
+  if (/Android/.test(ua)) return "Android";
+  if (/iPhone|iPad|iPod/.test(ua)) return "iOS / iPadOS";
+  if (/Mac OS X/.test(ua)) return "macOS";
+  if (/Linux/.test(ua)) return "Linux";
+
+  return "Não identificado";
+}
+
+function deviceType(userAgent) {
+  const ua = userAgent || "";
+  return /Mobile|Android|iPhone|iPod/i.test(ua) ? "Mobile" : "Desktop";
+}
+
+function locationText(item) {
+  const parts = [item.city, item.region, item.countryCode].filter(Boolean);
+  return parts.length ? parts.join(" · ") : "não informada";
+}
+
+function formatAccessTime(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium"
+  }).format(date);
+}
+
+function createAccessField(label, value, className = "") {
+  const wrapper = document.createElement("div");
+  wrapper.className = "access-field" + (className ? " " + className : "");
+
+  const fieldLabel = document.createElement("div");
+  fieldLabel.className = "access-field-label";
+  fieldLabel.textContent = label;
+
+  const fieldValue = document.createElement("div");
+  fieldValue.className = "access-field-value";
+  fieldValue.textContent = escapeText(value);
+
+  wrapper.append(fieldLabel, fieldValue);
+  return wrapper;
+}
+
+function formatActiveTime(ms) {
+  const value = Number(ms);
+
+  if (!Number.isFinite(value) || value < 0) {
+    return "—";
+  }
+
+  const totalSeconds = Math.round(value / 1000);
+
+  if (totalSeconds < 60) {
+    return totalSeconds + "s";
+  }
+
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (totalMinutes < 60) {
+    return seconds
+      ? totalMinutes + "min " + seconds + "s"
+      : totalMinutes + "min";
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  return minutes
+    ? hours + "h " + minutes + "min"
+    : hours + "h";
+}
+
+function formatTrackedActiveTime(item) {
+  if (!item.engagementUpdatedAt) {
+    return "—";
+  }
+
+  return formatActiveTime(item.activeTimeMs);
+}
+
+function formatTrackedScroll(item) {
+  if (!item.engagementUpdatedAt) {
+    return "—";
+  }
+
+  const value = Number(item.maxScrollPercent);
+
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
+
+  return Math.round(value) + "%";
+}
+
+function formatViewport(item) {
+  const width = Number(item.viewportWidth);
+  const height = Number(item.viewportHeight);
+
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return "—";
+  }
+
+  return width + " × " + height;
+}
+
+function formatPixelRatio(value) {
+  const ratio = Number(value);
+
+  if (!Number.isFinite(ratio) || ratio <= 0) {
+    return "—";
+  }
+
+  return ratio + "×";
+}
+
+function formatUtm(value) {
+  if (
+    typeof value !== "string" ||
+    value.trim() === ""
+  ) {
+    return "—";
+  }
+
+  return value.trim();
+}
+
+function formatEngagementUpdatedAt(item) {
+  if (!item.engagementUpdatedAt) {
+    return "—";
+  }
+
+  return formatAccessTime(item.engagementUpdatedAt);
+}
+
+function renderAccessRow(item) {
+  const article = document.createElement("article");
+  article.className = "access-row";
+
+  const duration = 14 + Math.random() * 11;
+  const delay = Math.random() * 15;
+  article.style.setProperty("--row-sweep-duration", duration.toFixed(2) + "s");
+  article.style.setProperty("--row-sweep-delay", delay.toFixed(2) + "s");
+
+  const top = document.createElement("div");
+  top.className = "access-row-top";
+
+  const id = document.createElement("div");
+  id.className = "access-id";
+  id.textContent = "#" + item.id;
+
+  const path = document.createElement("div");
+  path.className = "access-path";
+  path.textContent = item.path || "—";
+
+  const time = document.createElement("div");
+  time.className = "access-time";
+  time.textContent = formatAccessTime(item.viewedAt);
+
+  top.append(id, path, time);
+
+  const meta = document.createElement("div");
+  meta.className = "access-meta";
+
+  const nav = document.createElement("div");
+  nav.className = "access-field";
+
+  const navLabel = document.createElement("div");
+  navLabel.className = "access-field-label";
+  navLabel.textContent = "Navegação";
+
+  const navBadge = document.createElement("div");
+  navBadge.className = "nav-badge";
+  navBadge.dataset.type = item.navigationType || "unknown";
+  navBadge.textContent = item.navigationType || "unknown";
+
+  nav.append(navLabel, navBadge);
+
+  const resolution =
+    item.screenWidth && item.screenHeight
+      ? item.screenWidth + " × " + item.screenHeight
+      : "—";
+
+  meta.append(
+    nav,
+    createAccessField("Dispositivo", deviceType(item.userAgent)),
+    createAccessField("Navegador", browserName(item.userAgent)),
+    createAccessField("Sistema", operatingSystem(item.userAgent)),
+
+    createAccessField("Resolução", resolution),
+    createAccessField("Viewport", formatViewport(item)),
+    createAccessField("Pixel ratio", formatPixelRatio(item.devicePixelRatio)),
+    createAccessField("Idioma", item.language),
+
+    createAccessField("Tempo ativo", formatTrackedActiveTime(item)),
+    createAccessField("Scroll máximo", formatTrackedScroll(item)),
+    createAccessField("Último engagement", formatEngagementUpdatedAt(item)),
+    createAccessField("Timezone", item.timezone),
+
+    createAccessField("Visitante", shortId(item.visitorId)),
+    createAccessField("Sessão", shortId(item.sessionId)),
+    createAccessField("Localização", locationText(item)),
+    createAccessField("País", item.countryCode),
+
+    createAccessField(
+      "Região / cidade",
+      [item.region, item.city].filter(Boolean).join(" · ") || "—"
+    ),
+
+    createAccessField("UTM source", formatUtm(item.utmSource)),
+    createAccessField("UTM medium", formatUtm(item.utmMedium)),
+    createAccessField("UTM campaign", formatUtm(item.utmCampaign)),
+
+    createAccessField("UTM content", formatUtm(item.utmContent)),
+    createAccessField("UTM term", formatUtm(item.utmTerm)),
+
+    createAccessField(
+      "Referrer / origem",
+      item.referrer || "acesso direto",
+      "access-wide"
+    )
+  );
+
+  const uaField = document.createElement("div");
+  uaField.className = "access-field access-wide";
+
+  const uaLabel = document.createElement("div");
+  uaLabel.className = "access-field-label";
+  uaLabel.textContent = "User agent completo";
+
+  const uaValue = document.createElement("div");
+  uaValue.className = "access-user-agent";
+  uaValue.textContent = item.userAgent || "—";
+
+  uaField.append(uaLabel, uaValue);
+  meta.append(uaField);
+
+  article.append(top, meta);
+  return article;
+}
+
+async function loadAccessRows() {
+  if (accessState.loading || !accessState.hasMore) {
+    return;
+  }
+
+  accessState.loading = true;
+
+  const loader = $("access-loader");
+  const button = $("load-more");
+
+  loader.dataset.state = "loading";
+  loader.textContent = "carregando registros...";
+  button.disabled = true;
+
+  try {
+    const params = new URLSearchParams({ limit: "40" });
+
+    if (accessState.beforeId !== null) {
+      params.set("beforeId", String(accessState.beforeId));
+    }
+
+    const response = await fetch(
+      "/api/analytics/pageviews?" + params.toString(),
+      {
+        headers: { "Accept": "application/json" },
+        cache: "no-store"
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+
+    const data = await response.json();
+    const items = Array.isArray(data.items) ? data.items : [];
+
+    if (accessState.loaded === 0) {
+      loader.remove();
+    }
+
+    const list = $("access-list");
+
+    items.forEach((item) => {
+      list.appendChild(renderAccessRow(item));
+    });
+
+    accessState.loaded += items.length;
+    accessState.beforeId =
+      Number.isInteger(data.nextBeforeId) ? data.nextBeforeId : null;
+    accessState.hasMore = data.hasMore === true;
+
+    $("access-loaded-count").textContent =
+      new Intl.NumberFormat("pt-BR").format(accessState.loaded);
+
+    button.disabled = !accessState.hasMore;
+    button.textContent = accessState.hasMore
+      ? "Carregar mais registros"
+      : "Todos os registros foram carregados";
+
+    if (!items.length && accessState.loaded === 0) {
+      list.innerHTML =
+        '<div class="access-loader">Nenhum pageview registrado ainda.</div>';
+    }
+  } catch {
+    loader.dataset.state = "error";
+    loader.textContent =
+      "Não foi possível carregar o histórico detalhado.";
+    button.disabled = false;
+  } finally {
+    accessState.loading = false;
+  }
+}
+
+$("load-more").addEventListener("click", loadAccessRows);
+
+const accessList =
+  $("access-list");
+
+accessList.addEventListener(
+  "scroll",
+  () => {
+    if (
+      accessState.loading ||
+      !accessState.hasMore
+    ) {
+      return;
+    }
+
+    const remaining =
+      accessList.scrollHeight -
+      accessList.scrollTop -
+      accessList.clientHeight;
+
+    if (remaining <= 500) {
+      loadAccessRows();
+    }
+  }
+);
+
+randomizeCardSweeps();
+loadAnalytics();
+loadAccessRows();
+setInterval(loadAnalytics, 30000);
+</script>
+
+<script>
+(() => {
+  "use strict";
+
+  // ENGAGEMENT_RANKING_JS_V1
+
+  const list =
+    document.getElementById(
+      "engagement-ranking-list"
+    );
+
+  if (!list) {
+    return;
+  }
+
+  const state = {
+    mode: "engaged",
+    period: "all",
+    offset: 0,
+    hasMore: true,
+    loading: false,
+    batchSize: 20,
+    requestId: 0
+  };
+
+  function formatRankingTime(ms) {
+    const value = Number(ms);
+
+    if (!Number.isFinite(value) || value < 0) {
+      return "—";
+    }
+
+    const seconds =
+      Math.round(value / 1000);
+
+    if (seconds < 60) {
+      return seconds + "s";
+    }
+
+    const minutes =
+      Math.floor(seconds / 60);
+
+    const remainingSeconds =
+      seconds % 60;
+
+    if (minutes < 60) {
+      return remainingSeconds
+        ? minutes + "min " +
+            remainingSeconds + "s"
+        : minutes + "min";
+    }
+
+    const hours =
+      Math.floor(minutes / 60);
+
+    const remainingMinutes =
+      minutes % 60;
+
+    return remainingMinutes
+      ? hours + "h " +
+          remainingMinutes + "min"
+      : hours + "h";
+  }
+
+  function engagementLevel(score) {
+    if (score >= 75) {
+      return "alto";
+    }
+
+    if (score >= 45) {
+      return "médio";
+    }
+
+    return "baixo";
+  }
+
+  function shortRankingId(value) {
+    if (!value) {
+      return "—";
+    }
+
+    return String(value).slice(0, 8);
+  }
+
+  function formatRankingDate(value) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "—";
+    }
+
+    return new Intl.DateTimeFormat(
+      "pt-BR",
+      {
+        dateStyle: "short",
+        timeStyle: "short"
+      }
+    ).format(date);
+  }
+
+  function metric(label, value) {
+    const wrapper =
+      document.createElement("div");
+
+    wrapper.className =
+      "engagement-metric";
+
+    const labelElement =
+      document.createElement("div");
+
+    labelElement.className =
+      "engagement-metric-label";
+
+    labelElement.textContent =
+      label;
+
+    const valueElement =
+      document.createElement("div");
+
+    valueElement.className =
+      "engagement-metric-value";
+
+    valueElement.textContent =
+      value;
+
+    wrapper.append(
+      labelElement,
+      valueElement
+    );
+
+    return wrapper;
+  }
+
+  function renderRankingRow(
+    item,
+    index
+  ) {
+    const article =
+      document.createElement("article");
+
+    article.className =
+      "engagement-ranking-row";
+
+    const rank =
+      document.createElement("div");
+
+    rank.className =
+      "engagement-rank";
+
+    rank.textContent =
+      "#" + (index + 1);
+
+    const path =
+      document.createElement("div");
+
+    path.className =
+      "engagement-path";
+
+    path.textContent =
+      item.path || "—";
+
+    const meta =
+      document.createElement("div");
+
+    meta.className =
+      "engagement-ranking-meta";
+
+    meta.textContent =
+      formatRankingDate(
+        item.viewedAt
+      ) +
+      " · visitante " +
+      shortRankingId(
+        item.visitorId
+      ) +
+      " · " +
+      String(
+        Number(
+          item.sessionPageviews || 1
+        )
+      ) +
+      " pageviews";
+
+    path.appendChild(meta);
+
+    const scoreBlock =
+      document.createElement("div");
+
+    scoreBlock.className =
+      "engagement-score-block";
+
+    const scoreTop =
+      document.createElement("div");
+
+    scoreTop.className =
+      "engagement-score-top";
+
+    const scoreValue =
+      document.createElement("div");
+
+    scoreValue.className =
+      "engagement-score-value";
+
+    const score =
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Number(
+            item.engagementScore || 0
+          )
+        )
+      );
+
+    scoreValue.textContent =
+      score + "/100";
+
+    const scoreLabel =
+      document.createElement("div");
+
+    scoreLabel.className =
+      "engagement-score-label";
+
+    scoreLabel.textContent =
+      engagementLevel(score);
+
+    scoreTop.append(
+      scoreValue,
+      scoreLabel
+    );
+
+    const track =
+      document.createElement("div");
+
+    track.className =
+      "engagement-score-track";
+
+    const fill =
+      document.createElement("div");
+
+    fill.className =
+      "engagement-score-fill";
+
+    fill.style.width =
+      score + "%";
+
+    track.appendChild(fill);
+
+    scoreBlock.append(
+      scoreTop,
+      track
+    );
+
+    article.append(
+      rank,
+      path,
+      scoreBlock,
+
+      metric(
+        "Tempo ativo",
+        formatRankingTime(
+          item.activeTimeMs
+        )
+      ),
+
+      metric(
+        "Profundidade",
+        Math.round(
+          Number(
+            item.maxScrollPercent || 0
+          )
+        ) + "%"
+      ),
+
+      metric(
+        "Scroll real",
+        item.didScroll === true
+          ? "sim"
+          : "não"
+      ),
+
+      metric(
+        "Páginas distintas",
+        String(
+          Number(
+            item.distinctPages || 1
+          )
+        )
+      ),
+
+      metric(
+        "Navegações reais",
+        String(
+          Number(
+            item.sessionNavigations || 0
+          )
+        )
+      )
+    );
+
+    return article;
+  }
+
+  function updateButtons() {
+    document
+      .querySelectorAll(
+        "[data-ranking-mode]"
+      )
+      .forEach(button => {
+        button.dataset.active =
+          String(
+            button.dataset.rankingMode ===
+            state.mode
+          );
+      });
+
+    document
+      .querySelectorAll(
+        "[data-ranking-period]"
+      )
+      .forEach(button => {
+        button.dataset.active =
+          String(
+            button.dataset.rankingPeriod ===
+            state.period
+          );
+      });
+  }
+
+  async function loadRanking(reset = false) {
+    if (
+      !reset &&
+      (
+        state.loading ||
+        !state.hasMore
+      )
+    ) {
+      return;
+    }
+
+    if (reset) {
+      state.requestId += 1;
+      state.offset = 0;
+      state.hasMore = true;
+      list.scrollTop = 0;
+
+      list.innerHTML =
+        '<div class="engagement-ranking-status">' +
+        'carregando ranking...' +
+        '</div>';
+    }
+
+    const requestId =
+      state.requestId;
+
+    const requestOffset =
+      state.offset;
+
+    state.loading = true;
+
+    try {
+      const params =
+        new URLSearchParams({
+          limit:
+            String(state.batchSize),
+          offset:
+            String(requestOffset),
+          mode:
+            state.mode,
+          period:
+            state.period
+        });
+
+      const response =
+        await fetch(
+          "/api/analytics/pageviews?" +
+          params.toString(),
+          {
+            headers: {
+              "Accept":
+                "application/json"
+            },
+            cache: "no-store"
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          "HTTP " +
+          response.status
+        );
+      }
+
+      const data =
+        await response.json();
+
+      if (
+        requestId !==
+        state.requestId
+      ) {
+        return;
+      }
+
+      const items =
+        Array.isArray(data.items)
+          ? data.items
+          : [];
+
+      if (reset) {
+        list.replaceChildren();
+      }
+
+      if (!items.length) {
+        state.hasMore = false;
+
+        if (reset) {
+          list.innerHTML =
+            '<div class="engagement-ranking-status">' +
+            'Nenhum acesso com engagement neste período.' +
+            '</div>';
+        }
+
+        return;
+      }
+
+      items.forEach(
+        (item, index) => {
+          list.appendChild(
+            renderRankingRow(
+              item,
+              requestOffset + index
+            )
+          );
+        }
+      );
+
+      state.hasMore =
+        data.hasMore === true;
+
+      state.offset =
+        data.nextOffset === null ||
+        data.nextOffset === undefined
+          ? requestOffset +
+            items.length
+          : Number(
+              data.nextOffset
+            );
+
+    } catch {
+      if (
+        requestId !==
+        state.requestId
+      ) {
+        return;
+      }
+
+      if (reset) {
+        list.innerHTML =
+          '<div class="engagement-ranking-status">' +
+          'Não foi possível carregar o ranking.' +
+          '</div>';
+      }
+
+      state.hasMore = false;
+
+    } finally {
+      if (
+        requestId ===
+        state.requestId
+      ) {
+        state.loading = false;
+      }
+    }
+  }
+
+  list.addEventListener(
+    "scroll",
+    () => {
+      if (
+        state.loading ||
+        !state.hasMore
+      ) {
+        return;
+      }
+
+      const remaining =
+        list.scrollHeight -
+        list.scrollTop -
+        list.clientHeight;
+
+      if (remaining <= 250) {
+        loadRanking(false);
+      }
+    }
+  );
+
+  document
+    .querySelectorAll(
+      "[data-ranking-mode]"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          state.mode =
+            button.dataset.rankingMode;
+
+          updateButtons();
+          loadRanking(true);
+        }
+      );
+    });
+
+  document
+    .querySelectorAll(
+      "[data-ranking-period]"
+    )
+    .forEach(button => {
+      button.addEventListener(
+        "click",
+        () => {
+          state.period =
+            button.dataset.rankingPeriod;
+
+          updateButtons();
+          loadRanking(true);
+        }
+      );
+    });
+
+  updateButtons();
+  loadRanking(true);
+})();
+</script>
+
+</body>
+</html>
