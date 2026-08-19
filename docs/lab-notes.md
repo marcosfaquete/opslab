@@ -1,4 +1,4 @@
-# OpsLab — Lab Notes
+# OpsLab
 
 > Registro consolidado da construção, evolução e dos principais aprendizados técnicos do OpsLab.
 
