@@ -2226,24 +2226,6 @@
     }
   </script>
 
-  <script>
-    (() => {
-      const payload = {
-        path: "/opslab/",
-        referrer: document.referrer || "",
-        language: navigator.language || "",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
-        screenWidth: window.screen?.width || null,
-        screenHeight: window.screen?.height || null
-      };
-
-      fetch("/api/analytics/pageview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        keepalive: true
-      }).catch(() => {});
-    })();
-  </script>
+  <script src="/assets/analytics.js"></script>
 </body>
 </html>
