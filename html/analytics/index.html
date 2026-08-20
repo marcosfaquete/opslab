@@ -1724,7 +1724,7 @@
   </div>
 
   <section class="section">
-    <div class="section-label">Hoje</div>
+    <div class="section-label">Acumulado geral</div>
 
     <div class="cards">
       <article class="card">
@@ -1754,37 +1754,37 @@
       <article class="card">
         <div class="card-label">Home</div>
         <div class="card-value" id="home-today">—</div>
-        <div class="card-foot">pageviews hoje</div>
+        <div class="card-foot">pageviews acumulados</div>
       </article>
 
       <article class="card">
         <div class="card-label">OpsLab</div>
         <div class="card-value" id="opslab-today">—</div>
-        <div class="card-foot">pageviews hoje</div>
+        <div class="card-foot">pageviews acumulados</div>
       </article>
     </div>
   </section>
 
   <section class="section">
-    <div class="section-label">Visão acumulada</div>
+    <div class="section-label">Últimos 7 dias</div>
 
     <div class="periods">
       <article class="period">
         <h3>Pageviews</h3>
         <strong id="pageviews-total">—</strong>
-        <p><span id="pageviews-7d">—</span> nos últimos 7 dias</p>
+        <p>janela móvel de 7 dias</p>
       </article>
 
       <article class="period">
         <h3>Visitantes</h3>
         <strong id="visitors-total">—</strong>
-        <p><span id="visitors-7d">—</span> nos últimos 7 dias</p>
+        <p>janela móvel de 7 dias</p>
       </article>
 
       <article class="period">
         <h3>Sessões</h3>
         <strong id="sessions-total">—</strong>
-        <p><span id="sessions-7d">—</span> nos últimos 7 dias</p>
+        <p>janela móvel de 7 dias</p>
       </article>
     </div>
   </section>
@@ -1905,7 +1905,7 @@
       </div>
 
       <div class="access-counter">
-        carregados · <strong id="access-loaded-count">0</strong>
+        registros · <strong id="access-loaded-count">0</strong>
       </div>
     </div>
 
@@ -1963,21 +1963,20 @@ async function loadAnalytics() {
 
     const data = await response.json();
 
-    $("pageviews-today").textContent = number(data.pageviews.today);
-    $("visitors-today").textContent = number(data.visitors.today);
-    $("sessions-today").textContent = number(data.sessions.today);
-    $("reloads-today").textContent = number(data.navigation.reloadsToday);
+    $("access-loaded-count").textContent =
+      number(data.pageviews.total);
 
-    $("home-today").textContent = number(data.pages.home.today);
-    $("opslab-today").textContent = number(data.pages.opslab.today);
+    $("pageviews-today").textContent = number(data.pageviews.total);
+    $("visitors-today").textContent = number(data.visitors.total);
+    $("sessions-today").textContent = number(data.sessions.total);
+    $("reloads-today").textContent = number(data.navigation.reloadsTotal);
 
-    $("pageviews-total").textContent = number(data.pageviews.total);
-    $("pageviews-7d").textContent = number(data.pageviews.last7Days);
+    $("home-today").textContent = number(data.pages.home.total);
+    $("opslab-today").textContent = number(data.pages.opslab.total);
 
-    $("visitors-total").textContent = number(data.visitors.total);
-    $("visitors-7d").textContent = number(data.visitors.last7Days);
-
-    $("sessions-total").textContent = number(data.sessions.total);
+    $("pageviews-total").textContent = number(data.pageviews.last7Days);
+    $("visitors-total").textContent = number(data.visitors.last7Days);
+    $("sessions-total").textContent = number(data.sessions.last7Days);
     $("sessions-7d").textContent = number(data.sessions.last7Days);
 
     $("status").textContent = "analytics online";
@@ -2338,8 +2337,6 @@ async function loadAccessRows() {
       Number.isInteger(data.nextBeforeId) ? data.nextBeforeId : null;
     accessState.hasMore = data.hasMore === true;
 
-    $("access-loaded-count").textContent =
-      new Intl.NumberFormat("pt-BR").format(accessState.loaded);
 
     button.disabled = !accessState.hasMore;
     button.textContent = accessState.hasMore

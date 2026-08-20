@@ -1220,6 +1220,10 @@ const server = http.createServer(async (req, res) => {
 
           COUNT(*) FILTER (
             WHERE navigation_type = 'reload'
+          )::int AS "reloadsTotal",
+
+          COUNT(*) FILTER (
+            WHERE navigation_type = 'reload'
               AND viewed_at >= (
                 SELECT today_start FROM bounds
               )
@@ -1284,6 +1288,7 @@ const server = http.createServer(async (req, res) => {
           },
 
           navigation: {
+            reloadsTotal: row.reloadsTotal,
             reloadsToday: row.reloadsToday,
             reloadsLast7Days: row.reloadsLast7Days
           },
