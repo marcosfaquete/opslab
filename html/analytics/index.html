@@ -1762,6 +1762,12 @@
         <div class="card-value" id="opslab-today">—</div>
         <div class="card-foot">pageviews acumulados</div>
       </article>
+
+      <article class="card">
+        <div class="card-label">Extintor Pro</div>
+        <div class="card-value" id="extintor-pro-today">—</div>
+        <div class="card-foot">pageviews acumulados</div>
+      </article>
     </div>
   </section>
 
@@ -1973,6 +1979,7 @@ async function loadAnalytics() {
 
     $("home-today").textContent = number(data.pages.home.total);
     $("opslab-today").textContent = number(data.pages.opslab.total);
+    $("extintor-pro-today").textContent = number(data.pages.extintorPro.total);
 
     $("pageviews-total").textContent = number(data.pageviews.last7Days);
     $("visitors-total").textContent = number(data.visitors.last7Days);

@@ -1256,7 +1256,18 @@ const server = http.createServer(async (req, res) => {
               AND viewed_at >= (
                 SELECT today_start FROM bounds
               )
-          )::int AS "opslabToday"
+          )::int AS "opslabToday",
+
+          COUNT(*) FILTER (
+            WHERE path = '/extintor-pro/'
+          )::int AS "extintorProTotal",
+
+          COUNT(*) FILTER (
+            WHERE path = '/extintor-pro/'
+              AND viewed_at >= (
+                SELECT today_start FROM bounds
+              )
+          )::int AS "extintorProToday"
 
         FROM public.analytics_pageviews;
       `);
@@ -1301,6 +1312,10 @@ const server = http.createServer(async (req, res) => {
             opslab: {
               total: row.opslabTotal,
               today: row.opslabToday
+            },
+            extintorPro: {
+              total: row.extintorProTotal,
+              today: row.extintorProToday
             }
           }
         },
